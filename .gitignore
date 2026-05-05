@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+venv/
+env/
+ENV/
+*.log
+
+# 数据库
+*.db
+*.db-journal
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 临时文件
+test_*.py
+*_output.txt
+fix_*.py
+check_*.py
+diagnose*.py
+
+# 前端临时文件
+abstract-trade-*.html
