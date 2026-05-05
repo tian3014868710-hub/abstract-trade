@@ -1,20 +1,107 @@
 """
-seed_data.py - 填充抽象商品数据（改进版）
-- 接入 Pollinations.ai 生图
-- 商品主题来自热梗/搞怪创意
+seed_data.py - 填充抽象商品数据
+- 优先使用 Pollinations.ai 生图（需科学上网）
+- 生图失败自动降级为本地 SVG 占位图（无需网络）
 运行: python seed_data.py
 """
+
 import sys, os, hashlib, base64, urllib.request, urllib.parse, json, random, time
 from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from database import get_db, init_db
-from main import compute_hash, is_duplicate, ok
 
-init_db()
+# ── 不需要从 main 导入 ok（FastAPI 响应函数，种子脚本不需要）
 
-# ── 抽象热梗商品模板 ─────────────────────────
-# 每个商品：名称模板、描述模板、分类、稀有度
+def compute_hash(name: str, desc: str) -> str:
+    """计算商品哈希（去重用）"""
+    return hashlib.sha256(f"{name}{desc}".encode()).hexdigest()[:16]
+
+
+# ── 本地 SVG 占位图生成（无需网络）─────────────────
+def make_placeholder_svg(name: str, category: str, rarity: str, width=512, height=512) -> str:
+    """
+    生成 SVG 占位图，返回 data URL。
+    颜色根据稀有度变化，包含商品名称和分类。
+    """
+    rarity_colors = {
+        "common":    ("#6b7280", "#9ca3af", "🐻⬛"),
+        "rare":      ("#3b82f6", "#60a5fa", "🔵"),
+        "epic":      ("#8b5cf6", "#a78bfa", "🟣"),
+        "legendary": ("#f59e0b", "#fbbf24", "🟡"),
+    }
+    bg, fg, emoji = rarity_colors.get(rarity, rarity_colors["common"])
+    # 截断过长名称
+    short_name = name[:20] + "…" if len(name) > 20 else name
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:{bg};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:{fg};stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="{width}" height="{height}" fill="url(#bg)" rx="24"/>
+  <text x="50%" y="38%" font-size="72" text-anchor="middle" fill="white" opacity="0.8">{emoji}</text>
+  <text x="50%" y="55%" font-size="20" text-anchor="middle" fill="white" font-weight="bold">{short_name}</text>
+  <text x="50%" y="65%" font-size="14" text-anchor="middle" fill="white" opacity="0.7">{category}</text>
+  <text x="50%" y="82%" font-size="12" text-anchor="middle" fill="white" opacity="0.4">ABSTRACT TRADE</text>
+</svg>'''
+    b64 = base64.b64encode(svg.encode()).decode()
+    return f"data:image/svg+xml;base64,{b64}"
+
+
+# ── Pollinations 生图（带快速网络检测）─────────────────
+def check_network(timeout=3) -> bool:
+    """快速检测能否访问 Pollinations.ai"""
+    try:
+        req = urllib.request.Request(
+            "https://image.pollinations.ai/",
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return True
+    except Exception:
+        return False
+
+
+def pollinations_generate(prompt: str, width=512, height=512, timeout=15) -> str:
+    """
+    调用 Pollinations.ai 生成图片，返回 base64 data URL。
+    失败返回空字符串。
+    """
+    safe = urllib.parse.quote(prompt)
+    url = f"https://image.pollinations.ai/prompt/{safe}?width={width}&height={height}&model=flux&nologo=true"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            actual = resp.geturl()
+        req2 = urllib.request.Request(actual, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req2, timeout=timeout) as img_resp:
+            img_bytes = img_resp.read()
+        b64 = base64.b64encode(img_bytes).decode()
+        ct = img_resp.headers.get("Content-Type", "image/png")
+        return f"data:{ct};base64,{b64}"
+    except Exception as e:
+        return ""
+
+
+def generate_image(prompt: str, name: str, category: str, rarity: str) -> str:
+    """
+    生图入口：优先 Pollinations，失败则用本地 SVG 占位图。
+    """
+    # 先尝试 Pollinations（自动检测网络）
+    if check_network(timeout=3):
+        result = pollinations_generate(prompt, width=512, height=512)
+        if result:
+            return result
+        print(f"    ⚠️ Pollinations 生图失败，使用本地占位图")
+    else:
+        print(f"    ℹ️ 网络不通，使用本地占位图")
+    # 降级：本地 SVG
+    return make_placeholder_svg(name, category, rarity)
+
+
+# ── 抽象热梗商品模板 ────────────────────────
 MEME_TEMPLATES = [
     # 政治/名人梗
     ("特朗普的假发（已开光）",       "前总统同款，附赠一道闪电特效，戴上即可秒变懂王",       "🤪 搞笑", "rare"),
@@ -49,29 +136,6 @@ MEME_TEMPLATES = [
     ("抽卡沉没成本证明书",               "官方认证你在这个游戏里浪费了多少钱，附赠哭脸",   "🎮 游戏", "epic"),
 ]
 
-# ── Pollinations 生图 ─────────────────────────
-def pollinations_generate(prompt: str, width=512, height=512, retries=2) -> str:
-    """
-    调用 Pollinations.ai 生成图片，返回 base64 data URL
-    失败返回空字符串
-    """
-    safe = urllib.parse.quote(prompt)
-    url = f"https://image.pollinations.ai/prompt/{safe}?width={width}&height={height}&model=flux&nologo=true"
-    for attempt in range(retries + 1):
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                actual = resp.geturl()
-            req2 = urllib.request.Request(actual, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req2, timeout=60) as img_resp:
-                img_bytes = img_resp.read()
-            b64 = base64.b64encode(img_bytes).decode()
-            ct = img_resp.headers.get("Content-Type", "image/png")
-            return f"data:{ct};base64,{b64}"
-        except Exception as e:
-            print(f"    ⚠️ 生图重试 ({attempt+1}/{retries+1}): {e}")
-            time.sleep(2)
-    return ""
 
 # ── 主流程 ─────────────────────────
 def seed():
@@ -95,7 +159,7 @@ def seed():
     AI_USER_LIST = [
         ("抽象小王子", "🎭", "专业生产抽象商品，脑洞突破天际"),
         ("赛博炼金术士", "⚗️", "把废话炼成金句，把梗炼成商品"),
-        (" meme 教教主", "😈", "传播 meme 是我的天职"),
+        ("Meme 教教主", "😈", "传播 meme 是我的天职"),
         ("互联网考古学家", "🏛️", "挖掘被遗忘的网络古物"),
         ("AI 驯养师", "🤖", "专门训练 AI 生成更抽象的内容"),
         ("数字拾荒者", "🗑️", "在互联网垃圾场里淘金"),
@@ -109,25 +173,30 @@ def seed():
         ai_users.append(uname)
         cur.execute(
             "INSERT OR IGNORE INTO users (id,password,coins,level,is_ai,avatar_emoji,bio,created_at) VALUES (?,?,?,?,?,?,?,?)",
-            (uname, "", random.randint(500,5000), random.randint(1,8), 1, emoji, bio, now)
+            (uname, "", random.randint(500, 5000), random.randint(1, 8), 1, emoji, bio, now)
         )
     conn.commit()
     print(f"   ✓ 创建了 {len(ai_users)} 个 AI 用户")
 
     # 生成商品（生图 + 入库）
-    print("🎨 生成抽象商品（含 AI 生图）...")
+    print("🎨 生成抽象商品...")
     items_created = []
+    use_pollinations = check_network(timeout=3)
+    if use_pollinations:
+        print("   ✅ 网络通畅，使用 Pollinations.ai 生图")
+    else:
+        print("   ⚠️ Pollinations.ai 不可达，使用本地 SVG 占位图")
+
     for idx, (name, desc, cat, rarity) in enumerate(MEME_TEMPLATES):
         author = random.choice(ai_users)
         price = random.choice([
-            random.randint(10, 99),      # 平价
-            random.randint(100, 999),    # 中等
-            random.choice([1024, 2048, 4096, 8888, 1314])  # 吉利数
+            random.randint(10, 99),
+            random.randint(100, 999),
+            random.choice([1024, 2048, 4096, 8888, 1314])
         ])
-        # 用商品名+描述作为生图 prompt
-        img_prompt = f" surreal funny creative product design, {name}, {desc}, vibrant colors, meme style, high quality digital art"
-        print(f"  [{idx+1}/{len(MEME_TEMPLATES)}] 生图: {name}")
-        media_data = pollinations_generate(img_prompt, width=512, height=512)
+        img_prompt = f"surreal funny creative product design, {name}, {desc}, vibrant colors, meme style, high quality digital art"
+        print(f"  [{idx+1}/{len(MEME_TEMPLATES)}] {name}...")
+        media_data = generate_image(img_prompt, name, cat, rarity)
 
         if not media_data:
             print(f"    ⚠️ 生图失败，跳过: {name}")
@@ -147,36 +216,29 @@ def seed():
         except Exception as e:
             print(f"    ⚠️ 入库失败: {e}")
 
-        time.sleep(0.5)  # 避免请求过快
+    print(f"\n✅ 共生成 {len(items_created)} 个商品")
 
-    print(f"\n✅ 共生成 {len(items_created)} 个商品（含 AI 生图）")
-
-    # 生成一些交易记录
+    # 生成交易记录
     print("💰 生成交易记录...")
     for _ in range(min(20, len(items_created))):
         item_id = random.choice(items_created)
-        # 查商品
         cur.execute("SELECT author,price FROM items WHERE id=?", (item_id,))
         row = cur.fetchone()
         if not row: continue
         seller = row["author"]
         price  = row["price"]
-        # 随机买家
         buyers = [u for u in ai_users if u != seller]
         if not buyers: continue
         buyer = random.choice(buyers)
-        # 补钱
         cur.execute("UPDATE users SET coins=coins+? WHERE id=? AND coins<?", (price+100, buyer, price))
-        # 交易
         cur.execute("UPDATE users SET coins=coins-? WHERE id=?", (price, buyer))
         cur.execute("UPDATE users SET coins=coins+? WHERE id=?", (int(price*0.95), seller))
         cur.execute("UPDATE items SET author=?, transfers=transfers+1 WHERE id=?", (buyer, item_id))
-        tx_time = (datetime.now() - timedelta(hours=random.randint(1,72))).isoformat()
+        tx_time = (datetime.now() - timedelta(hours=random.randint(1, 72))).isoformat()
         cur.execute(
             "INSERT INTO transactions (item_id,buyer,seller,price,created_at) VALUES (?,?,?,?,?)",
             (item_id, buyer, seller, price, tx_time)
         )
-        # 通知
         cur.execute(
             "INSERT INTO notifications (user_id,type,content,read,created_at) VALUES (?,?,?,?,?)",
             (seller, "trade", f"💰 {buyer} 购买了你的「{name}」", 0, tx_time)
@@ -198,7 +260,7 @@ def seed():
             cur.execute("SELECT name FROM items WHERE id=?", (item_id,))
             r = cur.fetchone()
             if not r: continue
-            cmt_time = (datetime.now() - timedelta(minutes=random.randint(5,1440))).isoformat()
+            cmt_time = (datetime.now() - timedelta(minutes=random.randint(5, 1440))).isoformat()
             cur.execute(
                 "INSERT INTO comments (item_id,author,text,created_at) VALUES (?,?,?,?)",
                 (item_id, author, random.choice(COMMENTS), cmt_time)
@@ -209,9 +271,9 @@ def seed():
     # 生成足迹
     print("👣 生成足迹...")
     for u in ai_users:
-        viewed = random.sample(items_created, min(len(items_created), random.randint(3,8)))
+        viewed = random.sample(items_created, min(len(items_created), random.randint(3, 8)))
         for item_id in viewed:
-            t = (datetime.now() - timedelta(hours=random.randint(1,48))).isoformat()
+            t = (datetime.now() - timedelta(hours=random.randint(1, 48))).isoformat()
             cur.execute("DELETE FROM footprints WHERE user_id=? AND item_id=?", (u, item_id))
             cur.execute("INSERT INTO footprints (user_id,item_id,created_at) VALUES (?,?,?)", (u, item_id, t))
     conn.commit()
@@ -219,8 +281,10 @@ def seed():
     conn.close()
     print("\n🎉 数据填充完成！")
     print(f"   AI 用户: {len(ai_users)}")
-    print(f"   抽象商品: {len(items_created)} (全部带 AI 生图)")
+    print(f"   抽象商品: {len(items_created)}")
     print(f"   交易记录 / 评论 / 足迹 已生成")
 
+
 if __name__ == "__main__":
+    init_db()
     seed()

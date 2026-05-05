@@ -262,6 +262,325 @@ body {
 .lb-rank.top2 { background:linear-gradient(135deg,#e2e8f0,#94a3b8); color:#000; }
 .lb-rank.top3 { background:linear-gradient(135deg,#cd7f32,#a0622e); color:#fff; }
 .lb-name { flex:1; font-weight:700; font-size:14px; }
+
+/* ── 卡片"正在看"徽章 ── */
+.card-views {
+  position: absolute; top: 12px; left: 12px;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+  color: #fff; font-size: 12px; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+  display: flex; align-items: center; gap: 4px;
+  animation: viewsPulse 2.5s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes viewsPulse {
+  0%,100% { opacity:.85; }
+  50%      { opacity:1; }
+}
+
+/* ═══════════════════════════════════════
+   游戏化市场 CSS
+═══════════════════════════════════════ */
+
+/* ── 抽卡区 ── */
+.gacha-zone {
+  background: linear-gradient(135deg, #1a1040 0%, #2d1b69 50%, #1a0a2e 100%);
+  border: 1px solid rgba(192,132,252,0.3);
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin: 0 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.gacha-zone::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(192,132,252,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.gacha-zone-icon { font-size: 56px; flex-shrink: 0; }
+.gacha-zone-info { flex: 1; }
+.gacha-zone-title { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+.gacha-zone-desc { font-size: 13px; color: var(--tx2); }
+.gacha-zone-btns { display: flex; gap: 12px; flex-shrink: 0; }
+.gacha-btn {
+  padding: 14px 24px;
+  border-radius: 16px;
+  border: none;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.gacha-btn:active { transform: scale(0.95); }
+.gacha-btn-single {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+}
+.gacha-btn-single:hover { box-shadow: 0 6px 28px rgba(99,102,241,0.6); transform: translateY(-2px); }
+.gacha-btn-ten {
+  background: linear-gradient(135deg, #f59e0b, #e11d48);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(245,158,11,0.4);
+  position: relative;
+  overflow: hidden;
+}
+.gacha-btn-ten::after {
+  content: '限时8折';
+  position: absolute; top: -8px; right: -24px;
+  background: #e11d48; color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 28px;
+  transform: rotate(30deg);
+}
+.gacha-btn-ten:hover { box-shadow: 0 6px 28px rgba(245,158,11,0.6); transform: translateY(-2px); }
+.gacha-btn-label { font-size: 11px; opacity: 0.8; }
+
+/* ── 限时抢购 ── */
+.flash-sale-zone {
+  background: linear-gradient(135deg, rgba(225,29,72,0.08), rgba(225,29,72,0.02));
+  border: 1px solid rgba(225,29,72,0.25);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin: 0 0 28px;
+}
+.flash-sale-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.flash-sale-title { font-size: 17px; font-weight: 800; color: #e11d48; }
+.flash-sale-countdown { display: flex; gap: 6px; align-items: center; font-size: 14px; font-weight: 700; color: #e11d48; }
+.countdown-num {
+  background: #e11d48; color: #fff;
+  padding: 3px 10px; border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px; text-align: center;
+}
+.flash-sale-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.flash-card {
+  background: rgba(225,29,72,0.06);
+  border: 1px solid rgba(225,29,72,0.15);
+  border-radius: 12px; padding: 12px;
+  text-align: center; cursor: pointer;
+  transition: all 0.2s;
+}
+.flash-card:hover { transform: translateY(-3px); border-color: rgba(225,29,72,0.4); }
+.flash-card-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+.flash-card-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.flash-price { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.flash-price-orig { font-size: 12px; color: var(--tx3); text-decoration: line-through; }
+.flash-price-sale { font-size: 16px; font-weight: 900; color: #e11d48; }
+
+/* ── 收藏图鉴 ── */
+.collection-zone {
+  background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(52,211,153,0.06));
+  border: 1px solid rgba(251,191,36,0.15);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin: 0 0 28px;
+}
+.collection-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.collection-title { font-size: 17px; font-weight: 800; }
+.collection-overall { font-size: 13px; color: var(--tx2); }
+.collection-bars { display: flex; flex-direction: column; gap: 10px; }
+.rarity-bar { display: flex; align-items: center; gap: 10px; }
+.rarity-bar-label { font-size: 13px; font-weight: 700; min-width: 52px; }
+.rarity-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden; }
+.rarity-bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease-out; }
+.rarity-bar-fill.common  { background: linear-gradient(90deg, #6b7280, #9ca3af); }
+.rarity-bar-fill.rare    { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.rarity-bar-fill.epic    { background: linear-gradient(90deg, #8b5cf6, #c084fc); }
+.rarity-bar-fill.legendary { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.rarity-bar-text { font-size: 12px; font-weight: 700; min-width: 52px; text-align: right; color: var(--tx2); }
+
+/* ── 每日任务 ── */
+.daily-zone {
+  background: linear-gradient(135deg, rgba(52,211,153,0.08), rgba(52,211,153,0.02));
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin: 0 0 28px;
+  display: flex; align-items: center; gap: 20px;
+}
+.daily-icon { font-size: 40px; flex-shrink: 0; }
+.daily-info { flex: 1; }
+.daily-title { font-size: 16px; font-weight: 800; margin-bottom: 2px; }
+.daily-desc { font-size: 13px; color: var(--tx2); }
+.daily-streak-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: linear-gradient(135deg, #f59e0b, #e11d48);
+  color: #fff; font-size: 12px; font-weight: 800;
+  padding: 4px 12px; border-radius: 999px;
+  margin-top: 4px;
+}
+.daily-btn {
+  padding: 12px 20px; border-radius: 14px;
+  border: none; font-weight: 800; font-size: 14px;
+  cursor: pointer; flex-shrink: 0;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff; box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+  transition: all 0.2s;
+}
+.daily-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,0.5); }
+.daily-btn:active { transform: scale(0.95); }
+.daily-btn.claimed { background: rgba(255,255,255,0.1); color: var(--tx3); box-shadow: none; cursor: not-allowed; }
+
+/* ── 成就通知弹窗 ── */
+.ach-popup {
+  position: fixed; top: 80px; right: 24px; z-index: 9999;
+  background: linear-gradient(135deg, #1e1d32, #2d2650);
+  border: 1px solid rgba(251,191,36,0.4);
+  border-radius: 16px; padding: 16px 20px;
+  max-width: 300px;
+  box-shadow: 0 8px 40px rgba(251,191,36,0.2), 0 0 0 1px rgba(251,191,36,0.1);
+  animation: achSlideIn 0.5s cubic-bezier(.4,0,.2,1) both;
+  display: none;
+}
+.ach-popup.show { display: flex; align-items: center; gap: 14px; }
+@keyframes achSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes achSlideOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+.ach-popup-icon { font-size: 36px; flex-shrink: 0; }
+.ach-popup-info { flex: 1; }
+.ach-popup-title { font-size: 13px; font-weight: 700; color: #fbbf24; margin-bottom: 2px; }
+.ach-popup-desc { font-size: 12px; color: var(--tx2); }
+.ach-popup-coin { font-size: 14px; font-weight: 800; color: #fbbf24; }
+
+/* ── 抽卡弹窗 ── */
+.gacha-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 20px;
+}
+.gacha-modal-overlay.show { display: flex; }
+.gacha-modal-close {
+  position: absolute; top: 20px; right: 24px;
+  background: rgba(255,255,255,0.1); border: none;
+  color: #fff; font-size: 28px; cursor: pointer;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.gacha-modal-close:hover { background: rgba(255,255,255,0.2); }
+.gacha-modal-title { font-size: 24px; font-weight: 900; color: #fff; text-align: center; }
+.gacha-cards-container { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; max-width: 700px; }
+.gacha-card-reveal {
+  width: 150px; height: 200px;
+  perspective: 800px; cursor: default;
+}
+.gacha-card-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(.4,0,.2,1);
+}
+.gacha-card-reveal.flipped .gacha-card-inner { transform: rotateY(180deg); }
+.gacha-card-front, .gacha-card-back {
+  position: absolute; inset: 0;
+  border-radius: 16px;
+  backface-visibility: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.gacha-card-front {
+  background: linear-gradient(135deg, #2d2650, #1e1d32);
+  border: 2px solid rgba(192,132,252,0.3);
+}
+.gacha-card-front-text { font-size: 48px; animation: gachaShimmer 1.5s ease-in-out infinite; }
+@keyframes gachaShimmer {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.1); }
+}
+.gacha-card-back {
+  background: var(--card); border: 2px solid;
+  transform: rotateY(180deg); overflow: hidden;
+}
+.gacha-card-back img { width: 100%; height: 120px; object-fit: cover; }
+.gacha-card-back-name { font-size: 12px; font-weight: 700; padding: 6px 8px; text-align: center; }
+.gacha-card-back.rarity-common  { border-color: #6b7280; }
+.gacha-card-back.rarity-rare    { border-color: #3b82f6; box-shadow: 0 0 20px rgba(59,130,246,0.4); }
+.gacha-card-back.rarity-epic    { border-color: #8b5cf6; box-shadow: 0 0 30px rgba(139,92,246,0.5); }
+.gacha-card-back.rarity-legendary {
+  border-color: #f59e0b; box-shadow: 0 0 40px rgba(245,158,11,0.6);
+  animation: legendaryGlow 1.5s ease-in-out infinite;
+}
+.gacha-rare-badge {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 800;
+}
+.gacha-rare-badge.common  { background: rgba(107,114,128,0.8); color: #fff; }
+.gacha-rare-badge.rare    { background: rgba(59,130,246,0.8); color: #fff; }
+.gacha-rare-badge.epic    { background: rgba(139,92,246,0.9); color: #fff; }
+.gacha-rare-badge.legendary { background: linear-gradient(135deg,#f59e0b,#e11d48); color: #fff; }
+.gacha-modal-actions { display: flex; gap: 12px; }
+.gacha-modal-btn {
+  padding: 12px 28px; border-radius: 14px; border: none;
+  font-weight: 800; font-size: 15px; cursor: pointer;
+  transition: all 0.2s;
+}
+.gacha-modal-btn-retry { background: linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; }
+.gacha-modal-btn-close { background: rgba(255,255,255,0.1); color:#fff; }
+.gacha-modal-btn:hover { transform: translateY(-2px); }
+
+/* ── 特价卡稀缺标记 ── */
+.flash-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: #e11d48; color: #fff;
+  font-size: 10px; font-weight: 800;
+  padding: 2px 8px; border-radius: 999px;
+  z-index: 2;
+}
+
+/* ── 稀有度闪光特效 ── */
+@keyframes rarityFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(245,158,11,0.6); }
+  50%  { box-shadow: 0 0 40px 10px rgba(245,158,11,0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+}
+.flash-card.legendary-flash {
+  animation: rarityFlash 2s ease-in-out infinite;
+  border-color: rgba(245,158,11,0.5) !important;
+}
+
+/* ── 成就区（小徽章） ── */
+.ach-mini-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(251,191,36,0.06);
+  border: 1px solid rgba(251,191,36,0.12);
+  border-radius: 12px; padding: 10px 16px;
+  margin: 0 0 20px;
+  overflow-x: auto; white-space: nowrap;
+}
+.ach-mini-item {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+}
+.ach-mini-item.earned { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.ach-mini-item.locked { background: rgba(255,255,255,0.05); color: var(--tx3); }
+
+/* ── 过滤器标签悬浮特效 ── */
+.filter-tag {
+  position: relative;
+}
+.filter-tag.on {
+  background: linear-gradient(135deg, var(--acc), var(--acc2));
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(255,107,157,0.3);
+}
+
 .lb-coins { color:var(--acc3); font-weight:700; font-size:14px; }
 .detail-layout { display:grid; grid-template-columns:1fr 400px; gap:32px; margin-top:4px; }
 @media(max-width:960px){ .detail-layout{grid-template-columns:1fr} }
@@ -503,20 +822,90 @@ body {
   </div>
 </nav>
 
+<!-- 抽卡弹窗 -->
+<div class="gacha-modal-overlay" id="gachaModal">
+  <button class="gacha-modal-close" onclick="closeGachaModal()">✕</button>
+  <div class="gacha-modal-title" id="gachaModalTitle">🎰 扭蛋结果</div>
+  <div class="gacha-cards-container" id="gachaCardsContainer"></div>
+  <div class="gacha-modal-actions">
+    <button class="gacha-modal-btn gacha-modal-btn-retry" id="gachaRetryBtn" onclick="doGachaAgain()">再抽一次</button>
+    <button class="gacha-modal-btn gacha-modal-btn-close" onclick="closeGachaModal()">收下</button>
+  </div>
+</div>
+
 <div class="page on" id="pg-home">
-  <div class="hero">
-    <div class="hero-badge">🎮 游戏化虚拟资产交易平台</div>
-    <h1>收集 · 交易 · <span class="gradient-text">玩转抽象</span></h1>
-    <p>上架你的AI抽象创作，用游戏币买卖虚拟资产</p>
-    <div class="hero-btns">
-      <button class="btn btn-primary" onclick="sp('sell')">✨ 开始创作</button>
+  <!-- 成就通知弹窗 -->
+  <div class="ach-popup" id="achPopup">
+    <div class="ach-popup-icon" id="achPopupIcon">🏆</div>
+    <div class="ach-popup-info">
+      <div class="ach-popup-title" id="achPopupTitle">成就解锁！</div>
+      <div class="ach-popup-desc" id="achPopupDesc"></div>
+    </div>
+    <div class="ach-popup-coin" id="achPopupCoin">+20 🪙</div>
+  </div>
+
+  <!-- 抽卡区 -->
+  <div class="gacha-zone" id="gachaZone" style="display:none">
+    <div class="gacha-zone-icon">🎰</div>
+    <div class="gacha-zone-info">
+      <div class="gacha-zone-title">🎲 抽象扭蛋机</div>
+      <div class="gacha-zone-desc">消耗金币抽取随机抽象商品，稀有度越高越稀有！传奇商品全球限量</div>
+    </div>
+    <div class="gacha-zone-btns">
+      <button class="gacha-btn gacha-btn-single" onclick="doGacha(1)">
+        <span>🎰 单抽</span>
+        <span class="gacha-btn-label">50 币</span>
+      </button>
+      <button class="gacha-btn gacha-btn-ten" onclick="doGacha(10)">
+        <span>🌪️ 十连</span>
+        <span class="gacha-btn-label">450 币</span>
+      </button>
     </div>
   </div>
+
+  <!-- 限时抢购 -->
+  <div class="flash-sale-zone" id="flashSaleZone" style="display:none">
+    <div class="flash-sale-header">
+      <div class="flash-sale-title">⚡ 限时特价</div>
+      <div class="flash-sale-countdown">
+        <span>剩余</span>
+        <span class="countdown-num" id="cdH">00</span><span>:</span>
+        <span class="countdown-num" id="cdM">00</span><span>:</span>
+        <span class="countdown-num" id="cdS">00</span>
+      </div>
+    </div>
+    <div class="flash-sale-grid" id="flashSaleGrid"></div>
+  </div>
+
+  <!-- 收藏图鉴 -->
+  <div class="collection-zone" id="collectionZone" style="display:none">
+    <div class="collection-header">
+      <div class="collection-title">📖 收藏图鉴</div>
+      <div class="collection-overall" id="collectionOverall"></div>
+    </div>
+    <div class="collection-bars" id="collectionBars"></div>
+  </div>
+
+  <!-- 每日任务 -->
+  <div class="daily-zone" id="dailyZone" style="display:none">
+    <div class="daily-icon">🎁</div>
+    <div class="daily-info">
+      <div class="daily-title">🏆 每日登录奖励</div>
+      <div class="daily-desc" id="dailyDesc">每日签到领取金币奖励</div>
+      <div class="daily-streak-badge" id="dailyStreakBadge" style="display:none">🔥 <span id="streakDays">0</span>天连续</div>
+    </div>
+    <button class="daily-btn" id="dailyBtn" onclick="doDailyReward()">领取奖励</button>
+  </div>
+
+  <!-- 成就小徽章栏 -->
+  <div class="ach-mini-bar" id="achMiniBar"></div>
+
   <div class="stats-bar" id="statsBar">
     <div class="stat-item"><div class="stat-num" id="statTotal">-</div><div class="stat-label">在售商品</div></div>
     <div class="stat-item"><div class="stat-num" id="statUsers">-</div><div class="stat-label">注册用户</div></div>
     <div class="stat-item"><div class="stat-num" id="statTx">-</div><div class="stat-label">总交易量</div></div>
   </div>
+
   <div class="section-header" id="market-section"><div class="section-title">🔥 热门市场</div></div>
   <div class="filter-tags" id="filterBar">
     <div class="filter-tag on" onclick="filterTag(this)">全部</div>
@@ -908,6 +1297,323 @@ function updateNav() {
   if (ca) ca.textContent = avatarText;
 }
 
+// ── 游戏化市场 JS ─────────────────────────
+
+// 辅助函数：从 media_data 解析图片 URL
+function getImageSrc(item) {
+  if (item.media_type !== 'image' || !item.media_data) return '';
+  try {
+    const md = JSON.parse(item.media_data);
+    if (md && md.type === 'static' && md.url) return md.url;
+    if (typeof md === 'string' && md.startsWith('data:')) return md;
+    return item.media_data;
+  } catch(e) { return item.media_data || ''; }
+}
+
+// 稀有度颜色映射
+const RARITY_COLORS = {
+  common:    { bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)', glow: '#6b7280', label: '普通' },
+  rare:      { bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)', glow: '#3b82f6', label: '稀有' },
+  epic:      { bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.4)', glow: '#8b5cf6', label: '史诗' },
+  legendary: { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.5)', glow: '#f59e0b', label: '传奇' },
+};
+
+// ── 初始化首页所有游戏化组件 ──
+async function initHomepage() {
+  const uid = getCurrentUser();
+  if (uid) {
+    // 登录后才显示游戏化组件
+    showEl('gachaZone');
+    showEl('dailyZone');
+    showEl('collectionZone');
+    showEl('achMiniBar');
+    // 并行加载所有数据
+    await Promise.allSettled([
+      loadFlashSales(),
+      loadDailyReward(),
+      loadCollection(),
+      loadAchievements(),
+    ]);
+  }
+}
+
+// ── 限时抢购 ──
+let flashSaleTimer = null;
+async function loadFlashSales() {
+  try {
+    const res = await api('/api/flash-sales');
+    if (!res || res.code !== 0 || !res.data?.sales?.length) return;
+    const sales = res.data.sales;
+    showEl('flashSaleZone');
+    const grid = document.getElementById('flashSaleGrid');
+    grid.innerHTML = sales.map(s => {
+      const img = getImageSrc(s);
+      const imgHtml = img ? `<img class="flash-card-img" src="${img}" alt="${escapeHtml(s.name)}" />` : `<div style="width:100%;aspect-ratio:1;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:32px">🎭</div>`;
+      return `<div class="flash-card${s.rarity==='legendary'?' legendary-flash':''}" onclick="showDetail('${esc(s.item_id)}')">
+        ${imgHtml}
+        <div class="flash-card-name">${escapeHtml(s.name)}</div>
+        <div class="flash-price">
+          <span class="flash-price-orig">🪙${s.original_price}</span>
+          <span class="flash-price-sale">🪙${s.sale_price}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    // 找最近的过期时间并启动倒计时
+    const earliest = sales.map(s => new Date(s.ends_at)).reduce((a,b) => a<b?a:b);
+    if (flashSaleTimer) clearInterval(flashSaleTimer);
+    flashSaleTimer = setInterval(() => updateCountdown(earliest), 1000);
+    updateCountdown(earliest);
+  } catch(e) {}
+}
+
+function updateCountdown(endsAt) {
+  const now = new Date();
+  const diff = Math.max(0, endsAt - now);
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  const eH = document.getElementById('cdH');
+  const eM = document.getElementById('cdM');
+  const eS = document.getElementById('cdS');
+  if (eH) eH.textContent = pad(h);
+  if (eM) eM.textContent = pad(m);
+  if (eS) eS.textContent = pad(s);
+}
+
+// ── 收藏图鉴 ──
+async function loadCollection() {
+  const uid = getCurrentUser();
+  if (!uid) return;
+  try {
+    const res = await api(`/api/collections/${encodeURIComponent(uid)}`);
+    if (!res || res.code !== 0) return;
+    const d = res.data;
+    document.getElementById('collectionOverall').textContent = `总进度 ${d.overall_pct}%（${d.total_favorites}/${d.total_items}）`;
+    const bars = document.getElementById('collectionBars');
+    const labels = { common: '普通', rare: '稀有', epic: '史诗', legendary: '传奇' };
+    bars.innerHTML = ['common','rare','epic','legendary'].map(r => {
+      const s = d.rarity_stats[r] || {total:0, owned:0, pct:0};
+      return `<div class="rarity-bar">
+        <div class="rarity-bar-label" style="color:${RARITY_COLORS[r].glow}">${labels[r]}</div>
+        <div class="rarity-bar-track">
+          <div class="rarity-bar-fill ${r}" style="width:${s.pct}%"></div>
+        </div>
+        <div class="rarity-bar-text">${s.owned}/${s.total}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ── 每日奖励 ──
+async function loadDailyReward() {
+  const uid = getCurrentUser();
+  if (!uid) return;
+  try {
+    const res = await api('/api/checkin');
+    if (!res || res.code !== 0) return;
+    const d = res.data || {};
+    const today = new Date().toISOString().slice(0, 10);
+    const isClaimed = d.user_checked_in_today || false;
+    const btn = document.getElementById('dailyBtn');
+    const streakBadge = document.getElementById('dailyStreakBadge');
+    const streakDays = document.getElementById('streakDays');
+    if (btn) {
+      if (isClaimed) {
+        btn.textContent = '已领取 ✓'; btn.className = 'daily-btn claimed'; btn.disabled = true;
+      } else {
+        btn.textContent = '领取奖励'; btn.className = 'daily-btn'; btn.disabled = false;
+      }
+    }
+    if (d.streak_days && d.streak_days > 1) {
+      if (streakBadge) { streakBadge.style.display = 'inline-flex'; }
+      if (streakDays) streakDays.textContent = d.streak_days;
+    }
+  } catch(e) {}
+}
+
+async function doDailyReward() {
+  const res = await api('/api/daily-reward', {method:'POST'});
+  if (!res || res.code !== 0) {
+    if (res?.msg) toast(res.msg);
+    return;
+  }
+  const d = res.data;
+  toast(`🎁 领取成功！+${d.coins_earned} 金币` + (d.milestone ? ' ' + d.milestone : ''));
+  // 更新UI
+  const btn = document.getElementById('dailyBtn');
+  if (btn) { btn.textContent = '已领取 ✓'; btn.className = 'daily-btn claimed'; btn.disabled = true; }
+  // 更新金币显示
+  const coinNum = document.getElementById('coinNum');
+  if (coinNum) {
+    const current = parseInt(coinNum.textContent.replace(/,/g,'')) || 0;
+    animateNumber(coinNum, current, current + d.coins_earned, 800);
+  }
+  // 显示成就弹窗
+  if (res.new_achievements?.length) {
+    for (const ach of res.new_achievements) {
+      showAchievementPopup(ach);
+    }
+  }
+  loadDailyReward();
+}
+
+// ── 成就系统 ──
+async function loadAchievements() {
+  const uid = getCurrentUser();
+  if (!uid) return;
+  try {
+    const res = await api(`/api/achievements/${encodeURIComponent(uid)}`);
+    if (!res || res.code !== 0) return;
+    const achList = res.data?.achievements || [];
+    const bar = document.getElementById('achMiniBar');
+    if (!bar) return;
+    bar.innerHTML = achList.slice(0, 8).map(a =>
+      `<div class="ach-mini-item ${a.earned ? 'earned' : 'locked'}" title="${a.name}：${a.description}${a.earned?'（已获得）':'（未获得）'}">
+        ${a.icon} ${a.earned ? a.name : '???'}
+      </div>`
+    ).join('');
+  } catch(e) {}
+}
+
+let achPopupTimer = null;
+function showAchievementPopup(ach) {
+  const popup = document.getElementById('achPopup');
+  if (!popup) return;
+  const iconEl = document.getElementById('achPopupIcon');
+  const titleEl = document.getElementById('achPopupTitle');
+  const descEl = document.getElementById('achPopupDesc');
+  const coinEl = document.getElementById('achPopupCoin');
+  if (iconEl) iconEl.textContent = ach.icon || '🏆';
+  if (titleEl) titleEl.textContent = '🎉 成就解锁！';
+  if (descEl) descEl.textContent = ach.description || ach.name;
+  if (coinEl) coinEl.textContent = `+${ach.reward_coins || 0} 🪙`;
+  popup.classList.add('show');
+  playSound('success');
+  if (achPopupTimer) clearTimeout(achPopupTimer);
+  achPopupTimer = setTimeout(() => popup.classList.remove('show'), 5000);
+}
+
+// ── 抽卡系统 ──
+let pendingGachaCount = 1;
+let pendingGachaItems = [];
+let gachaCountdown = null;
+
+async function doGacha(count=1) {
+  const uid = getCurrentUser();
+  if (!uid) { toast('请先登录再抽卡！'); sp('login'); return; }
+  const res = await api(`/api/gacha?count=${count}`, {method:'POST'});
+  if (!res || res.code !== 0) { if(res?.msg) toast(res.msg); return; }
+  pendingGachaCount = count;
+  pendingGachaItems = res.data?.items || [];
+  openGachaModal();
+  // 逐个翻牌
+  await revealCardsSequentially(pendingGachaItems);
+  // 显示新增成就
+  const newAchs = res.data?.new_achievements || [];
+  for (const ach of newAchs) setTimeout(() => showAchievementPopup(ach), 1500);
+  // 更新金币
+  const coinNum = document.getElementById('coinNum');
+  if (coinNum) {
+    const spent = res.data?.coins_spent || 0;
+    const current = parseInt(coinNum.textContent.replace(/,/g,'')) || 0;
+    animateNumber(coinNum, current, current - spent, 600);
+  }
+  playSound('success');
+}
+
+function openGachaModal() {
+  document.getElementById('gachaModal').classList.add('show');
+}
+function closeGachaModal() {
+  document.getElementById('gachaModal').classList.remove('show');
+  clearTimeout(gachaCountdown);
+}
+function doGachaAgain() {
+  closeGachaModal();
+  setTimeout(() => doGacha(pendingGachaCount), 300);
+}
+
+async function revealCardsSequentially(items) {
+  const container = document.getElementById('gachaCardsContainer');
+  const title = document.getElementById('gachaModalTitle');
+  if (!container) return;
+
+  // 先显示翻牌背
+  container.innerHTML = items.map((entry, i) => {
+    const rarity = entry.rarity || 'common';
+    return `<div class="gacha-card-reveal" id="gc_${i}" style="opacity:0;transform:scale(0.5)">
+      <div class="gacha-card-inner">
+        <div class="gacha-card-front"><div class="gacha-card-front-text">🎰</div></div>
+        <div class="gacha-card-back rarity-${rarity}">
+          <div class="gacha-rare-badge ${rarity}">${RARITY_COLORS[rarity]?.label || rarity}</div>
+          <img id="gcimg_${i}" src="" alt="" />
+          <div class="gacha-card-back-name" id="gcname_${i}"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 淡入所有卡
+  for (let i = 0; i < items.length; i++) {
+    const el = document.getElementById(`gc_${i}`);
+    if (el) { el.style.transition = 'opacity 0.3s, transform 0.3s'; el.style.opacity = '1'; el.style.transform = 'scale(1)'; }
+    await sleep(80);
+  }
+
+  // 逐个翻牌
+  for (let i = 0; i < items.length; i++) {
+    await sleep(300);
+    const el = document.getElementById(`gc_${i}`);
+    if (el) el.classList.add('flipped');
+    const item = items[i]?.item || {};
+    const imgEl = document.getElementById(`gcimg_${i}`);
+    const nameEl = document.getElementById(`gcname_${i}`);
+    if (imgEl) {
+      const src = getImageSrc(item);
+      imgEl.src = src || '/product_imgs/' + item.id + '.png';
+    }
+    if (nameEl) nameEl.textContent = item.name || '';
+    if (item.rarity === 'legendary') playSound('success');
+    await sleep(500);
+  }
+
+  // 更新标题
+  const legendaryCount = items.filter(i => i.rarity === 'legendary').length;
+  if (title) {
+    if (legendaryCount > 0) title.textContent = `✨ ${legendaryCount}个传奇！运气爆棚！`;
+    else if (items.some(i => i.rarity === 'epic')) title.textContent = '🌟 抽到史诗！';
+    else title.textContent = '🎰 扭蛋结果';
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// 数字滚动动画
+function animateNumber(el, from, to, duration) {
+  if (!el) return;
+  const start = performance.now();
+  const diff = to - from;
+  function update(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + diff * eased).toLocaleString();
+    if (t < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+function showEl(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = '';
+}
+
+// ── 检查当前登录用户 ──
+function getCurrentUser() {
+  return document.cookie.split(';').find(c => c.trim().startsWith('uid='))?.split('=')[1] || '';
+}
+
 async function renderHome() {
   const cat = document.querySelector('#filterBar .filter-tag.on')?.textContent || '全部';
   const res = await api('/api/items' + (cat!=='全部' ? '?category='+encodeURIComponent(cat) : ''));
@@ -919,11 +1625,23 @@ async function renderHome() {
   const grid = document.getElementById('homeGrid');
   if (grid) grid.style.display = 'grid';
   if (grid) grid.innerHTML = items.map((item,i) => {
-    const imgHTML = (item.media_type === 'image' && item.media_data)
-      ? '<img src="' + item.media_data + '" alt="' + escapeHtml(item.name) + '" />'
+    let imgSrc = '', isStatic = false;
+    if (item.media_type === 'image' && item.media_data) {
+      try {
+        const md = JSON.parse(item.media_data);
+        if (md && md.type === 'static' && md.url) { imgSrc = md.url; isStatic = true; }
+        else if (typeof md === 'string' && md.startsWith('data:')) { imgSrc = md; }
+        else { imgSrc = item.media_data; }
+      } catch(e) { imgSrc = item.media_data; }
+    }
+    const imgHTML = imgSrc
+      ? '<img src="' + imgSrc + '" alt="' + escapeHtml(item.name) + '" />'
       : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
+    const views = item.views || Math.floor(Math.random()*80)+3;
     return '<div class="card" onclick="showDetail(\'' + esc(item.id) + '\')" style="animation:pageIn 0.4s ' + (i*0.06) + 's both">' +
-      '<div class="card-img">' + imgHTML + '<div class="img-overlay"></div><div class="price-tag">🪙 ' + item.price + '</div></div>' +
+      '<div class="card-img">' + imgHTML + '<div class="img-overlay"></div>' +
+      '<div class="price-tag">🪙 ' + item.price + '</div>' +
+      '<div class="card-views">👁️ ' + views + '人在看</div></div>' +
       '<div class="card-body"><div class="card-title">' + escapeHtml(item.name) + '</div>' +
       '<div class="card-author"><span onclick="event.stopPropagation();viewUser(\'' + esc(item.author) + '\')" style="cursor:pointer;text-decoration:underline;color:var(--acc2)">' + escapeHtml(item.author) + '</span> · ' + escapeHtml(item.category||'') + '</div>' +
       '<div class="card-footer"><div class="card-likes">❤️ ' + (item.likes||0) + '</div>' +
@@ -963,6 +1681,9 @@ async function renderHome() {
       const stx = document.getElementById('statTx'); if (stx) stx.textContent = sd.transactions || 0;
     }
   } catch(e) {}
+
+  // 加载游戏化组件
+  initHomepage();
 }
 
 async function showDetail(id) {
@@ -974,8 +1695,9 @@ async function showDetail(id) {
   currentDetailFaved = false;
   const da = document.getElementById('detailArt');
   if (da) {
-    if (item.media_type === 'image' && item.media_data) {
-      da.innerHTML = '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />';
+    const imgSrc = item.media_type === 'image' && item.media_data ? getImageSrc(item) : null;
+    if (imgSrc) {
+      da.innerHTML = '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover" />';
     } else {
       da.innerHTML = '<div style="font-size:120px">' + escapeHtml(item.emoji || '🎭') + '</div>';
     }
@@ -1185,8 +1907,9 @@ async function renderUserProfile(username) {
   if (grid) {
     if (items.length) {
       grid.innerHTML = items.map((item,i) => {
-        const imgHTML = (item.media_type === 'image' && item.media_data)
-          ? '<img src="' + item.media_data + '" alt="' + escapeHtml(item.name) + '" />'
+        const imgSrc = (item.media_type === 'image' && item.media_data) ? getImageSrc(item) : null;
+        const imgHTML = imgSrc
+          ? '<img src="' + imgSrc + '" alt="' + escapeHtml(item.name) + '" />'
           : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
         const rl = {'common':'普通','rare':'稀有','epic':'史诗','legendary':'传奇'}[item.rarity||'common']||'普通';
         return '<div class="card" onclick="showDetail(\'' + esc(item.id) + '\')" style="animation:pageIn 0.4s ' + (i*0.06) + 's both">' +
@@ -1225,8 +1948,9 @@ async function renderProfile() {
   if (!grid) return;
   if (items.length) {
     grid.innerHTML = items.map((item,i) => {
-      const imgHTML = (item.media_type === 'image' && item.media_data)
-        ? '<img src="' + item.media_data + '" alt="' + escapeHtml(item.name) + '" />'
+      const imgSrc = (item.media_type === 'image' && item.media_data) ? getImageSrc(item) : null;
+      const imgHTML = imgSrc
+        ? '<img src="' + imgSrc + '" alt="' + escapeHtml(item.name) + '" />'
         : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
       return '<div class="card" onclick="showDetail(\'' + item.id + '\')">' +
         '<div class="card-img">' + imgHTML + '<div class="img-overlay"></div><div class="price-tag">🪙 ' + item.price + '</div></div>' +
@@ -1530,8 +2254,9 @@ async function renderProfileFavs() {
   if (!grid) return;
   if (items.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--tx3);padding:40px">还没有收藏任何商品</div>'; return; }
   grid.innerHTML = items.map(item => {
-    const img = (item.media_type==='image' && item.media_data)
-      ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
+    const imgSrc = (item.media_type==='image' && item.media_data) ? getImageSrc(item) : null;
+    const img = imgSrc
+      ? '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover" />'
       : '<div>' + (item.emoji||'🎭') + '</div>';
     return '<div class="fav-item" onclick="showDetail(\'' + esc(item.id) + '\')">' +
       '<div class="fav-item-img">' + img + '</div>' +
@@ -1547,8 +2272,9 @@ async function renderProfileFPs() {
   if (!grid) return;
   if (items.length === 0) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--tx3);padding:40px">还没有浏览记录</div>'; return; }
   grid.innerHTML = items.map(item => {
-    const img = (item.media_type==='image' && item.media_data)
-      ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
+    const imgSrc = (item.media_type==='image' && item.media_data) ? getImageSrc(item) : null;
+    const img = imgSrc
+      ? '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover" />'
       : '<div>' + (item.emoji||'🎭') + '</div>';
     return '<div class="fp-item" onclick="showDetail(\'' + esc(item.id) + '\')">' +
       '<div class="fp-item-img">' + img + '</div>' +
@@ -1748,8 +2474,9 @@ async function doSearch() {
         items.map((item,i) => {
           const bg = ['linear-gradient(135deg,#1a0a2e,#2d1b69)','linear-gradient(135deg,#0a1a2e,#1b6942)','linear-gradient(135deg,#2e0a0a,#691b1b)'][i%3];
           const rl = {common:'普通',rare:'稀有',legendary:'传说'}[item.rarity]||'普通';
-          const imgContent = (item.media_type === 'image' && item.media_data)
-            ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
+          const imgSrc = (item.media_type === 'image' && item.media_data) ? getImageSrc(item) : null;
+          const imgContent = imgSrc
+            ? '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover" />'
             : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
           return '<div class="card" onclick="showDetail(\'' + esc(item.id) + '\')" style="animation:pageIn 0.4s ' + (i*0.06) + 's both">' +
             '<div class="card-img" style="background:' + bg + '">' + imgContent + '<div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.65);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700;color:var(--acc3)">🪙 ' + item.price + '</div></div>' +

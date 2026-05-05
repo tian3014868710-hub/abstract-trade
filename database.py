@@ -256,6 +256,75 @@ if USE_TURSO:
         )
         """)
 
+        # ── gacha_records 表（抽卡记录）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS gacha_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            rarity TEXT NOT NULL,
+            cost INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """)
+
+        # ── achievements 表（成就定义）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS achievements (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            icon TEXT NOT NULL,
+            description TEXT NOT NULL,
+            reward_coins INTEGER DEFAULT 0,
+            threshold INTEGER DEFAULT 1
+        )
+        """)
+
+        # ── user_achievements 表（用户已获得成就）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_achievements (
+            user_id TEXT NOT NULL,
+            achievement_id TEXT NOT NULL,
+            achieved_at TEXT NOT NULL
+        )
+        """)
+
+        # ── flash_sales 表（限时特价）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS flash_sales (
+            item_id TEXT PRIMARY KEY,
+            original_price INTEGER NOT NULL,
+            sale_price INTEGER NOT NULL,
+            ends_at TEXT NOT NULL
+        )
+        """)
+
+        conn.commit()
+
+        # ── 预置成就数据 ──
+        ACHIEVEMENTS_DATA = [
+            ("first_gacha",    "🎰", "初次抽卡",     "进行第一次抽卡",              20, 1),
+            ("ten_gacha",     "🎰", "十连必得",     "进行一次十连抽卡",            50, 1),
+            ("legendary_hit", "✨", "传奇入手",     "获得传奇稀有度物品",          100, 1),
+            ("collector_10",  "📖", "小收藏家",     "收藏10个商品",               30, 10),
+            ("collector_25",  "📖", "收藏达人",     "收藏25个商品",               80, 25),
+            ("active_3day",   "🔥", "三日游",       "连续登录3天",                30, 3),
+            ("active_7day",   "🔥", "周活跃户",     "连续登录7天",                100, 7),
+            ("rich_5k",       "💰", "小有资产",     "持有5000金币",               50, 5000),
+            ("rich_20k",      "💰", "富甲一方",     "持有20000金币",              200, 20000),
+            ("buyer_5",       "🛒", "剁手党",       "购买5个商品",                60, 5),
+            ("first_sell",    "✨", "开张大吉",     "成功售出第一个商品",          30, 1),
+            ("cat_complete",   "🐱", "喵星人收藏家", "收藏所有萌宠类商品",          150, 5),
+        ]
+        for ach in ACHIEVEMENTS_DATA:
+            try:
+                cur.execute(
+                    "INSERT OR IGNORE INTO achievements (id,icon,name,description,reward_coins,threshold) VALUES (?,?,?,?,?,?)",
+                    ach
+                )
+            except Exception:
+                pass
+
         conn.commit()
 
         # 迁移：为已有数据库添加新字段
@@ -480,7 +549,74 @@ else:
         )
         """)
 
+        # ── gacha_records 表（抽卡记录）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS gacha_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            rarity TEXT NOT NULL,
+            cost INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """)
+
+        # ── achievements 表（成就定义）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS achievements (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            icon TEXT NOT NULL,
+            description TEXT NOT NULL,
+            reward_coins INTEGER DEFAULT 0,
+            threshold INTEGER DEFAULT 1
+        )
+        """)
+
+        # ── user_achievements 表（用户已获得成就）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_achievements (
+            user_id TEXT NOT NULL,
+            achievement_id TEXT NOT NULL,
+            achieved_at TEXT NOT NULL
+        )
+        """)
+
+        # ── flash_sales 表（限时特价）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS flash_sales (
+            item_id TEXT PRIMARY KEY,
+            original_price INTEGER NOT NULL,
+            sale_price INTEGER NOT NULL,
+            ends_at TEXT NOT NULL
+        )
+        """)
+
         conn.commit()
+
+        # ── 预置成就数据 ──
+        ACHIEVEMENTS_DATA = [
+            ("first_gacha",    "🎰", "初次抽卡",     "进行第一次抽卡",              20, 1),
+            ("ten_gacha",     "🎰", "十连必得",     "进行一次十连抽卡",            50, 1),
+            ("legendary_hit", "✨", "传奇入手",     "获得传奇稀有度物品",          100, 1),
+            ("collector_10",  "📖", "小收藏家",     "收藏10个商品",               30, 10),
+            ("collector_25",  "📖", "收藏达人",     "收藏25个商品",               80, 25),
+            ("active_3day",   "🔥", "三日游",       "连续登录3天",                30, 3),
+            ("active_7day",   "🔥", "周活跃户",     "连续登录7天",                100, 7),
+            ("rich_5k",       "💰", "小有资产",     "持有5000金币",               50, 5000),
+            ("rich_20k",      "💰", "富甲一方",     "持有20000金币",              200, 20000),
+            ("buyer_5",       "🛒", "剁手党",       "购买5个商品",                60, 5),
+            ("first_sell",    "✨", "开张大吉",     "成功售出第一个商品",          30, 1),
+            ("cat_complete",   "🐱", "喵星人收藏家", "收藏所有萌宠类商品",          150, 5),
+        ]
+        for ach in ACHIEVEMENTS_DATA:
+            try:
+                cur.execute(
+                    "INSERT OR IGNORE INTO achievements (id,icon,name,description,reward_coins,threshold) VALUES (?,?,?,?,?,?)",
+                    ach
+                )
+            except Exception:
+                pass
 
         # 迁移：为已有数据库添加新字段
         _migrations = [

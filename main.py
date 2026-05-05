@@ -6,8 +6,9 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import sqlite3, hashlib, json, binascii, os, secrets, urllib.request, urllib.parse, base64
-from datetime import datetime
+import sqlite3, hashlib, json, binascii, os, secrets, random, urllib.request, urllib.parse, base64
+from datetime import datetime, timedelta
+from contextvars import ContextVar
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -49,6 +50,20 @@ def fail(msg="操作失败", code=1):
 
 def get_uid(request: Request) -> str:
     return request.cookies.get("uid", "")
+
+# ── 无参 get_current_user（从请求上下文获取）──
+_request_local = ContextVar("_request_local", default=None)
+
+@app.middleware("http")
+async def capture_request(request, call_next):
+    _request_local.set(request)
+    return await call_next(request)
+
+def get_current_user() -> str:
+    req = _request_local.get()
+    if req is None:
+        return ""
+    return req.cookies.get("uid", "")
 
 # ── 认证接口 ────────────────────────
 @app.post("/api/register")
@@ -762,14 +777,14 @@ def api_profile(username: str):
 def api_stats():
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM items WHERE status='active'")
-    total_items = cur.fetchone()[0] if cur.fetchone() else 0
-    cur.execute("SELECT COUNT(*) FROM users")
-    total_users = cur.fetchone()[0] if cur.fetchone() else 0
-    cur.execute("SELECT COUNT(*) FROM transactions")
-    total_tx = cur.fetchone()[0] if cur.fetchone() else 0
-    cur.execute("SELECT COUNT(*) FROM users WHERE is_ai=1")
-    ai_users = cur.fetchone()[0] if cur.fetchone() else 0
+    r = cur.execute("SELECT COUNT(*) FROM items WHERE status='active'").fetchone()
+    total_items = r[0] if r else 0
+    r = cur.execute("SELECT COUNT(*) FROM users").fetchone()
+    total_users = r[0] if r else 0
+    r = cur.execute("SELECT COUNT(*) FROM transactions").fetchone()
+    total_tx = r[0] if r else 0
+    r = cur.execute("SELECT COUNT(*) FROM users WHERE is_ai=1").fetchone()
+    ai_users = r[0] if r else 0
     conn.close()
     return ok({"items": total_items, "users": total_users, "transactions": total_tx, "ai_users": ai_users})
 
@@ -830,6 +845,302 @@ def api_search(q: str = ""):
     users = [dict(r) for r in cur.fetchall()]
     conn.close()
     return ok({"items": items, "users": users})
+
+
+# ── 限时抢购接口 ────────────────────────
+@app.get("/api/flash-sales")
+def api_flash_sales():
+    conn = get_db()
+    cur = conn.cursor()
+    now = datetime.now().isoformat()
+
+    # 清理过期特价
+    cur.execute("DELETE FROM flash_sales WHERE ends_at < ?", (now,))
+    conn.commit()
+
+    # 已有有效特价，直接返回
+    cur.execute("""
+        SELECT f.item_id, f.original_price, f.sale_price, f.ends_at,
+               i.name, i.category, i.rarity, i.media_data, i.media_type
+        FROM flash_sales f JOIN items i ON f.item_id = i.id
+        WHERE f.ends_at > ? AND i.status = 'active'
+    """, (now,))
+    existing = [dict(r) for r in cur.fetchall()]
+
+    # 如果少于3个，补满
+    if len(existing) < 3:
+        cur.execute("""
+            SELECT id, name, price, category, rarity, media_data, media_type
+            FROM items WHERE status='active' AND id NOT IN (SELECT item_id FROM flash_sales)
+            ORDER BY RANDOM() LIMIT ?
+        """, (3 - len(existing),))
+        for row in cur.fetchall():
+            d = dict(row)
+            sale_price = max(1, int(d['price'] * 0.5))
+            ends_at = (datetime.now() + timedelta(hours=random.randint(2, 23))).isoformat()
+            try:
+                cur.execute(
+                    "INSERT OR IGNORE INTO flash_sales (item_id,original_price,sale_price,ends_at) VALUES (?,?,?,?)",
+                    (d['id'], d['price'], sale_price, ends_at)
+                )
+                conn.commit()
+                d['original_price'] = d['price']
+                d['sale_price'] = sale_price
+                cur.execute("SELECT ends_at FROM flash_sales WHERE item_id=?", (d['id'],))
+                row = cur.fetchone()
+                d['ends_at'] = row[0] if row else ends_at
+                existing.append(d)
+            except Exception:
+                pass
+
+    conn.close()
+    return ok({"sales": existing})
+
+
+# ── 抽卡接口 ────────────────────────
+@app.post("/api/gacha")
+def api_gacha(count: int = 1):
+    uid = get_current_user()
+    if not uid:
+        return fail("请先登录")
+    count = min(max(count, 1), 10)
+    cost = 50 * count if count < 10 else 450  # 十连450币
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT coins FROM users WHERE id=?", (uid,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return fail("用户不存在")
+    if row['coins'] < cost:
+        conn.close()
+        return fail(f"金币不足！需要{cost}币，你只有{row['coins']}币")
+
+    # 扣除金币
+    cur.execute("UPDATE users SET coins=coins-? WHERE id=?", (cost, uid))
+    conn.commit()
+
+    # 稀有度权重: common 60%, rare 25%, epic 12%, legendary 3%
+    RARITY_WEIGHTS = [('common', 60), ('rare', 25), ('epic', 12), ('legendary', 3)]
+    items_drawn = []
+    new_achievements = []
+
+    for _ in range(count):
+        roll = random.randint(1, 100)
+        cumulative = 0
+        chosen_rarity = 'common'
+        for rarity, weight in RARITY_WEIGHTS:
+            cumulative += weight
+            if roll <= cumulative:
+                chosen_rarity = rarity
+                break
+
+        # 从数据库随机选一个该稀有度的商品
+        cur.execute("""
+            SELECT id, name, `desc`, emoji, price, author, category, rarity, likes,
+                   media_data, media_type, created_at
+            FROM items WHERE status='active' AND rarity=? ORDER BY RANDOM() LIMIT 1
+        """, (chosen_rarity,))
+        item_row = cur.fetchone()
+
+        if not item_row:
+            # 没有该稀有度商品，降级到 common
+            cur.execute("""
+                SELECT id, name, `desc`, emoji, price, author, category, rarity, likes,
+                       media_data, media_type, created_at
+                FROM items WHERE status='active' ORDER BY RANDOM() LIMIT 1
+            """)
+            item_row = cur.fetchone()
+
+        item_d = dict(item_row)
+
+        # 记录抽卡
+        now = datetime.now().isoformat()
+        cur.execute(
+            "INSERT INTO gacha_records (user_id,item_id,rarity,cost,created_at) VALUES (?,?,?,?,?)",
+            (uid, item_d['id'], chosen_rarity, cost // count, now)
+        )
+        conn.commit()
+
+        items_drawn.append({
+            "item": item_d,
+            "rarity": chosen_rarity,
+            "is_new": True
+        })
+
+        # 检查成就：初次抽卡
+        _check_achievement(conn, uid, "first_gacha")
+        if count >= 10:
+            _check_achievement(conn, uid, "ten_gacha")
+        if chosen_rarity == 'legendary':
+            _check_achievement(conn, uid, "legendary_hit")
+
+    # 检查金币相关成就
+    cur.execute("SELECT coins FROM users WHERE id=?", (uid,))
+    coins_now = cur.fetchone()['coins']
+    if coins_now >= 5000:
+        _check_achievement(conn, uid, "rich_5k")
+    if coins_now >= 20000:
+        _check_achievement(conn, uid, "rich_20k")
+
+    # 获取新增成就
+    cur.execute("""
+        SELECT a.id, a.icon, a.name, a.description, a.reward_coins
+        FROM user_achievements ua JOIN achievements a ON ua.achievement_id = a.id
+        WHERE ua.user_id=? AND ua.achieved_at=?
+    """, (uid, now))
+    new_achievements = [dict(r) for r in cur.fetchall()]
+    for ach in new_achievements:
+        cur.execute("UPDATE users SET coins=coins+? WHERE id=?", (ach['reward_coins'], uid))
+
+    conn.commit()
+    conn.close()
+    return ok({
+        "items": items_drawn,
+        "cost": cost,
+        "coins_spent": cost,
+        "new_achievements": new_achievements
+    })
+
+
+# ── 收藏图鉴接口 ────────────────────────
+@app.get("/api/collections/{username}")
+def api_collections(username: str):
+    conn = get_db()
+    cur = conn.cursor()
+    uid = get_current_user()
+    is_self = uid == username
+
+    # 统计各类稀有度
+    rarity_stats = {}
+    for rarity in ['common', 'rare', 'epic', 'legendary']:
+        cur.execute("SELECT COUNT(*) FROM items WHERE status='active' AND rarity=?", (rarity,))
+        total = cur.fetchone()[0]
+        owned = 0
+        if is_self:
+            cur.execute("""
+                SELECT COUNT(*) FROM favorites f
+                JOIN items i ON f.item_id = i.id
+                WHERE f.user_id=? AND i.rarity=?
+            """, (username, rarity))
+            owned = cur.fetchone()[0]
+        rarity_stats[rarity] = {"total": total, "owned": owned, "pct": round(owned/total*100,1) if total else 0}
+
+    # 总收藏数
+    cur.execute("SELECT COUNT(*) FROM favorites WHERE user_id=?", (username,))
+    total_fav = cur.fetchone()[0]
+
+    # 总商品数
+    cur.execute("SELECT COUNT(*) FROM items WHERE status='active'")
+    total_items = cur.fetchone()[0]
+
+    conn.close()
+    return ok({
+        "rarity_stats": rarity_stats,
+        "total_favorites": total_fav,
+        "total_items": total_items,
+        "overall_pct": round(total_fav/total_items*100,1) if total_items else 0
+    })
+
+
+# ── 每日奖励接口 ────────────────────────
+@app.post("/api/daily-reward")
+def api_daily_reward():
+    uid = get_current_user()
+    if not uid:
+        return fail("请先登录")
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # 检查今天是否已领取
+    cur.execute("SELECT * FROM check_ins WHERE user_id=? AND date=?", (uid, today))
+    if cur.fetchone():
+        conn.close()
+        return fail("今日奖励已领取，明天再来！")
+
+    # 计算连续登录天数
+    cur.execute("SELECT date FROM check_ins WHERE user_id=? ORDER BY date DESC", (uid,))
+    past = [r['date'] for r in cur.fetchall()]
+    streak = 1
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    if past and past[0] == yesterday:
+        streak = 2
+        for i in range(1, len(past)):
+            expected = (datetime.strptime(past[i-1], "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+            if past[i] == expected:
+                streak += 1
+            else:
+                break
+
+    # 计算奖励：基础奖励+连续天数加成
+    base = 10 + min(streak * 5, 50)
+    bonus = 0
+    milestone = ""
+    if streak == 3:
+        bonus = 20; milestone = "🔥 连续3天登录！额外+20币"
+    elif streak == 7:
+        bonus = 50; milestone = "🔥 连续7天登录！额外+50币"
+    elif streak == 30:
+        bonus = 200; milestone = "🔥 连续30天登录！额外+200币"
+    total_reward = base + bonus
+
+    # 发放奖励
+    cur.execute("UPDATE users SET coins=coins+? WHERE id=?", (total_reward, uid))
+    cur.execute(
+        "INSERT INTO check_ins (user_id, date, coins_earned) VALUES (?,?,?)",
+        (uid, today, total_reward)
+    )
+    conn.commit()
+
+    # 检查连续登录成就
+    if streak >= 3:
+        _check_achievement(conn, uid, "active_3day")
+    if streak >= 7:
+        _check_achievement(conn, uid, "active_7day")
+
+    conn.close()
+    return ok({
+        "coins_earned": total_reward,
+        "streak_days": streak,
+        "milestone": milestone,
+        "today": today
+    })
+
+
+# ── 成就列表接口 ────────────────────────
+@app.get("/api/achievements/{username}")
+def api_achievements(username: str):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM achievements ORDER BY reward_coins")
+    all_ach = [dict(r) for r in cur.fetchall()]
+    cur.execute("SELECT achievement_id, achieved_at FROM user_achievements WHERE user_id=?", (username,))
+    earned = {r['achievement_id']: r['achieved_at'] for r in cur.fetchall()}
+    conn.close()
+    result = []
+    for ach in all_ach:
+        d = dict(ach)
+        d['earned'] = ach['id'] in earned
+        d['earned_at'] = earned.get(ach['id'], None)
+        result.append(d)
+    return ok({"achievements": result})
+
+
+# ── 成就检查辅助函数 ────────────────────────
+def _check_achievement(conn, uid, achievement_id):
+    """检查并授予成就，发放奖励，返回是否新获得"""
+    cur = conn.cursor()
+    now = datetime.now().isoformat()
+    cur.execute(
+        "INSERT OR IGNORE INTO user_achievements (user_id, achievement_id, achieved_at) VALUES (?,?,?)",
+        (uid, achievement_id, now)
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
 
 # ── AI 活跃模拟（服务器启动时自动运行）──────────────────────
 def _pollinations_gen(prompt: str, w=512, h=512) -> str:
