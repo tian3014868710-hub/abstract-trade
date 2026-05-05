@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import sqlite3, hashlib, json, binascii, os, secrets
+import sqlite3, hashlib, json, binascii, os, secrets, urllib.request, urllib.parse, base64
 from datetime import datetime
 import sys
 
@@ -187,6 +187,16 @@ def api_list_friends(request: Request):
     conn.close()
     return ok({"friends": friends, "pending": pending})
 
+def add_notification(conn, user_id: str, ntype: str, content: str):
+    """插入通知，内部函数"""
+    now = datetime.now().isoformat()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO notifications (user_id, type, content, read, created_at) VALUES (?,?,?,?,?)",
+        (user_id, ntype, content, 0, now)
+    )
+    conn.commit()
+
 @app.post("/api/friends/request")
 async def api_friend_request(request: Request):
     uid = get_uid(request)
@@ -214,7 +224,7 @@ async def api_friend_request(request: Request):
     now = datetime.now().isoformat()
     cur.execute("INSERT INTO friendships (from_user, to_user, status, created_at) VALUES (?,?,?,?)",
                 (uid, target, "pending", now))
-    conn.commit()
+    add_notification(conn, target, "friend_request", f"💌 {uid} 向你发送了好友申请")
     conn.close()
     return ok(None, f"已向 {target} 发送好友申请")
 
@@ -228,7 +238,7 @@ async def api_friend_respond(request: Request):
     except Exception:
         return fail("参数错误")
     from_user = (body or {}).get("from_user", "")
-    action = (body or {}).get("action", "")  # accept / reject
+    action = (body or {}).get("action", "")
     if action not in ("accept", "reject"):
         return fail("无效操作")
     conn = get_db()
@@ -241,9 +251,11 @@ async def api_friend_respond(request: Request):
     if action == "accept":
         cur.execute("UPDATE friendships SET status='accepted' WHERE from_user=? AND to_user=?",
                     (from_user, uid))
+        add_notification(conn, from_user, "friend_accept", f"🎉 {uid} 接受了你的好友申请，你们现在是好友了！")
     else:
         cur.execute("DELETE FROM friendships WHERE from_user=? AND to_user=?",
                     (from_user, uid))
+        add_notification(conn, from_user, "friend_reject", f"😢 {uid} 拒绝了你的好友申请")
     conn.commit()
     conn.close()
     return ok(None, "已接受" if action == "accept" else "已拒绝")
@@ -307,6 +319,8 @@ async def api_send_message(request: Request):
         "INSERT INTO messages (from_user, to_user, content, msg_type, extra_data, created_at, read) VALUES (?,?,?,?,?,?,?)",
         (uid, to_user, content, msg_type, extra_data, now, 0)
     )
+    content_preview = content[:30] + ('...' if len(content) > 30 else '')
+    add_notification(conn, to_user, "message", f"💬 {uid} 给你发了一条消息：{content_preview}")
     conn.commit()
     conn.close()
     return ok(None, "发送成功")
@@ -529,6 +543,8 @@ async def api_buy_item(item_id: str, request: Request):
         "INSERT INTO transactions (item_id,buyer,seller,price,created_at) VALUES (?,?,?,?,?)",
         (item_id, buyer, item["author"], item["price"], now)
     )
+    add_notification(conn, item["author"], "trade", f"💰 {buyer} 购买了你的「{item['name']}」，获得 🪙{int(item['price']*0.95)}")
+    add_notification(conn, buyer, "trade", f"🛒 你购买了「{item['name']}」，花费 🪙{item['price']}")
     conn.commit(); conn.close()
     return ok(None, f"🎉 购买成功！「{item['name']}」现在属于你")
 
@@ -565,11 +581,17 @@ async def api_add_favorite(request: Request):
     now = datetime.now().isoformat()
     conn = get_db()
     cur = conn.cursor()
+    cur.execute("SELECT author, name FROM items WHERE id=?", (item_id,))
+    item_row = cur.fetchone()
+    item_author = item_row["author"] if item_row else ""
+    item_name = item_row["name"] if item_row else "商品"
     try:
         cur.execute("INSERT INTO favorites (user_id, item_id, created_at) VALUES (?,?,?)",
                     (uid, item_id, now))
         cur.execute("UPDATE items SET likes=likes+1 WHERE id=?", (item_id,))
         conn.commit()
+        if item_author and item_author != uid:
+            add_notification(conn, item_author, "favorite", f"⭐ {uid} 收藏了你的「{item_name}」")
     except Exception:
         conn.close()
         return fail("已收藏过该商品")
@@ -734,6 +756,262 @@ def api_profile(username: str):
     items = [dict(r) for r in cur.fetchall()]
     conn.close()
     return ok({"user": dict(u), "items": items})
+
+# ── 统计接口 ────────────────────────
+@app.get("/api/stats")
+def api_stats():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM items WHERE status='active'")
+    total_items = cur.fetchone()[0] if cur.fetchone() else 0
+    cur.execute("SELECT COUNT(*) FROM users")
+    total_users = cur.fetchone()[0] if cur.fetchone() else 0
+    cur.execute("SELECT COUNT(*) FROM transactions")
+    total_tx = cur.fetchone()[0] if cur.fetchone() else 0
+    cur.execute("SELECT COUNT(*) FROM users WHERE is_ai=1")
+    ai_users = cur.fetchone()[0] if cur.fetchone() else 0
+    conn.close()
+    return ok({"items": total_items, "users": total_users, "transactions": total_tx, "ai_users": ai_users})
+
+# ── 生图接口（Pollinations.ai 免费，无需 Key）──────────────────
+@app.get("/api/generate-image")
+def api_generate_image(prompt: str = "", size: str = "512x512"):
+    """
+    调用 Pollinations.ai 免费生图，返回 base64 图片
+    size: "256x256" | "512x512" | "1024x1024"
+    """
+    if not prompt or len(prompt) < 2:
+        return fail("prompt 至少2个字符")
+    try:
+        w, h = (size + "x").split("x")[:2]
+        w, h = int(w or 512), int(h or 512)
+    except Exception:
+        w, h = 512, 512
+    w = max(256, min(1024, w))
+    h = max(256, min(1024, h))
+    safe_prompt = urllib.parse.quote(prompt)
+    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width={w}&height={h}&model=flux&nologo=true"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            actual_url = resp.geturl()
+        req2 = urllib.request.Request(actual_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req2, timeout=30) as img_resp:
+            img_bytes = img_resp.read()
+        b64 = base64.b64encode(img_bytes).decode()
+        ct = img_resp.headers.get("Content-Type", "image/png")
+        data_url = f"data:{ct};base64,{b64}"
+        return ok({
+            "image_data": data_url,
+            "content_type": ct,
+            "size": f"{w}x{h}"
+        }, "生图成功")
+    except Exception as e:
+        return fail(f"生图失败：{e}")
+
+# ── 搜索接口 ────────────────────────
+@app.get("/api/search")
+def api_search(q: str = ""):
+    if not q or len(q) < 1:
+        return fail("关键词至少1个字符")
+    q_like = f"%{q}%"
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, name, price, emoji, author, rarity, likes, category, created_at
+        FROM items WHERE status='active' AND (name LIKE ? OR `desc` LIKE ? OR category LIKE ?)
+        ORDER BY likes DESC LIMIT 20
+    """, (q_like, q_like, q_like))
+    items = [dict(r) for r in cur.fetchall()]
+    cur.execute("""
+        SELECT id, avatar_emoji, bio, coins, level FROM users
+        WHERE id LIKE ? ORDER BY coins DESC LIMIT 10
+    """, (q_like,))
+    users = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return ok({"items": items, "users": users})
+
+# ── AI 活跃模拟（服务器启动时自动运行）──────────────────────
+def _pollinations_gen(prompt: str, w=512, h=512) -> str:
+    """后台线程专用生图，返回 base64 data URL"""
+    try:
+        safe = urllib.parse.quote(prompt)
+        url = f"https://image.pollinations.ai/prompt/{safe}?width={w}&height={h}&model=flux&nologo=true"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            actual = resp.geturl()
+        req2 = urllib.request.Request(actual, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req2, timeout=60) as img_resp:
+            b64 = base64.b64encode(img_resp.read()).decode()
+        return f"data:image/png;base64,{b64}"
+    except Exception:
+        return ""
+
+def ai_simulate_loop():
+    """后台线程：让 AI 用户持续活跃 + 定期创作新商品（含生图）"""
+    import time, random
+    from datetime import datetime, timedelta
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from database import get_db
+
+    AI_PRODUCT_IDEAS = [
+        ("老板的已读不回",         "互联网化石级恐惧，购买后自动获得「再催就是你不近人情」buff",        "🤪 搞笑", "rare"),
+        ("AI 的梦境碎片",          "据说 GPT-5 做梦时梦到的画面，集齐7片可召唤 API 免费额度",      "🌈 赛博朋克", "epic"),
+        ("小丑的安慰奖杯",          "参加小丑牌输掉后颁发，附赠「至少我玩得很开心」成就",        "🎮 游戏", "rare"),
+        ("社恐专用隐身斗篷",       "上班佩戴，同事自动忽略你的存在，附赠「在忙」自动回复",        "🤪 搞笑", "epic"),
+        ("算法推荐的反向训练器",     "连续使用3天，推荐算法开始给你推阳春面做法",                "🌈 赛博朋克", "rare"),
+        ("前任的味道（香水）",       "闻一次治好所有恋爱脑，附赠「我还是不懂」BGM",              "🤪 搞笑", "legendary"),
+        ("AI 生成内容检测器（假）",  "其实什么都检测不出来，但购买了你会觉得自己很安全",        "🌈 赛博朋克", "common"),
+        ("虚拟房产产权证",          "位于元宇宙核心地段（实际上不存在），可传给下一代",          "🌈 赛博朋克", "rare"),
+        ("GPT 的午休时间",         "购买后 AI 会停止回复你3小时，体验真正的 AI 罢工",           "🌈 赛博朋克", "rare"),
+        ("互联网记忆消除器",         "一键忘记所有微博热搜，附赠「我还是太年轻」感悟",           "💀 恐怖", "legendary"),
+    ]
+
+    def get_ai_users(conn):
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE is_ai=1")
+        return [r[0] for r in cur.fetchall()]
+
+    def get_active_items(conn):
+        cur = conn.cursor()
+        cur.execute("SELECT id, author, price FROM items WHERE status='active' ORDER BY RANDOM() LIMIT 20")
+        return [dict(r) for r in cur.fetchall()]
+
+    def do_create_product(conn, ai_list):
+        if not ai_list: return
+        author = random.choice(ai_list)
+        name, desc, cat, rarity = random.choice(AI_PRODUCT_IDEAS)
+        price = random.choice([random.randint(10,99), random.randint(100,999),
+                               random.choice([1024,2048,4096,8888,1314])])
+        img_prompt = f"surreal funny product design, {name}, {desc}, vibrant meme style, high quality digital art"
+        print(f"[AI创作] {name}")
+        media_data = _pollinations_gen(img_prompt, 512, 512)
+        if not media_data:
+            print("  ⚠️ 生图失败，跳过")
+            return
+        try:
+            item_id = binascii.hexlify(os.urandom(5)).decode()[:10]
+            h = compute_hash(name, desc)
+            now = datetime.now().isoformat()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO items (id,name,desc,emoji,price,author,category,rarity,hash,created_at,status,media_type,media_data) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (item_id, name, desc, "🎭", price, author, cat, rarity, h, now, "active", "image", media_data)
+            )
+            conn.commit()
+            print(f"  ✓ 上架: {name} (🪙{price})")
+        except Exception as e:
+            print(f"  ⚠️ 入库失败: {e}")
+
+    comments = [
+        "哈哈哈哈这什么鬼东西我现在非常需要", "价格能不能用班味碎片抵",
+        "已收藏，坐等升值", "笑死，这个商品太符合当代人了",
+        "有没有优惠啊老板", "命运的齿轮开始转动（购物车的）",
+        "抽象交易 yyds", "我怀疑这个商家是 AI 但我没有证据",
+    ]
+    msgs = [
+        "你好！有兴趣交易吗", "这个商品还在吗？", "能不能便宜点",
+        "已关注你，多交流", "网站挺好玩哈哈", "你的商品很有创意！",
+    ]
+
+    last_create = time.time()
+    print("🤖 AI 活跃模拟线程启动（含自动创作商品）...")
+    while True:
+        try:
+            conn = get_db()
+            ai_list = get_ai_users(conn)
+            items   = get_active_items(conn)
+            conn.close()
+
+            if ai_list:
+                now_ts = time.time()
+                # 每 5~15 分钟触发一次商品创作
+                if now_ts - last_create > random.randint(300, 900):
+                    print(f"\n=== AI 定时创作 ===")
+                    conn = get_db()
+                    do_create_product(conn, ai_list)
+                    conn.close()
+                    last_create = now_ts
+                    time.sleep(random.uniform(1, 3))
+
+                # 随机做 1~3 个动作
+                for _ in range(random.randint(1, 3)):
+                    action = random.choice(['comment', 'fav', 'msg', 'buy', 'fp', 'create'])
+                    conn = get_db()
+                    ai_list2 = get_ai_users(conn)
+                    items2   = get_active_items(conn)
+                    try:
+                        if action == 'comment' and items2:
+                            item = random.choice(items2)
+                            ai   = random.choice(ai_list2)
+                            now  = datetime.now().isoformat()
+                            cur = conn.cursor()
+                            cur.execute("INSERT INTO comments (item_id,author,text,created_at) VALUES (?,?,?,?)",
+                                        (item['id'], ai, random.choice(comments), now))
+                            conn.commit()
+                        elif action == 'fav' and items2:
+                            item = random.choice(items2)
+                            ai   = random.choice(ai_list2)
+                            now  = datetime.now().isoformat()
+                            cur = conn.cursor()
+                            cur.execute("INSERT OR IGNORE INTO favorites (user_id,item_id,created_at) VALUES (?,?,?)",
+                                        (ai, item['id'], now))
+                            cur.execute("UPDATE items SET likes=likes+1 WHERE id=? AND (SELECT changes())=1", (item['id'],))
+                            conn.commit()
+                        elif action == 'msg' and len(ai_list2) >= 2:
+                            u1, u2 = random.sample(ai_list2, 2)
+                            sender = random.choice([u1, u2])
+                            receiver = u2 if sender == u1 else u1
+                            now = datetime.now().isoformat()
+                            cur = conn.cursor()
+                            cur.execute(
+                                "INSERT INTO messages (from_user,to_user,content,msg_type,extra_data,created_at,read) VALUES (?,?,?,?,?,?,?)",
+                                (sender, receiver, random.choice(msgs), 'text', '', now, 0))
+                            conn.commit()
+                        elif action == 'buy' and items2:
+                            item = random.choice(items2)
+                            buyers = [u for u in ai_list2 if u != item['author']]
+                            if buyers:
+                                buyer, seller, price = random.choice(buyers), item['author'], item['price']
+                                now = datetime.now().isoformat()
+                                cur = conn.cursor()
+                                cur.execute("SELECT coins FROM users WHERE id=?", (buyer,))
+                                r = cur.fetchone()
+                                if not r or r[0] < price:
+                                    cur.execute("UPDATE users SET coins=coins+? WHERE id=?", (price+100, buyer))
+                                cur.execute("UPDATE users SET coins=coins-? WHERE id=?", (price, buyer))
+                                cur.execute("UPDATE users SET coins=coins+? WHERE id=?", (int(price*0.95), seller))
+                                cur.execute("UPDATE items SET author=?, transfers=transfers+1 WHERE id=?", (buyer, item['id']))
+                                cur.execute("INSERT INTO transactions (item_id,buyer,seller,price,created_at) VALUES (?,?,?,?,?)",
+                                            (item['id'], buyer, seller, price, now))
+                                conn.commit()
+                        elif action == 'fp' and items2:
+                            item = random.choice(items2)
+                            ai   = random.choice(ai_list2)
+                            now  = datetime.now().isoformat()
+                            cur = conn.cursor()
+                            cur.execute("DELETE FROM footprints WHERE user_id=? AND item_id=?", (ai, item['id']))
+                            cur.execute("INSERT INTO footprints (user_id,item_id,created_at) VALUES (?,?,?)",
+                                        (ai, item['id'], now))
+                            conn.commit()
+                        elif action == 'create':
+                            do_create_product(conn, ai_list2)
+                    except Exception:
+                        pass
+                    finally:
+                        conn.close()
+                    time.sleep(random.uniform(0.5, 2.0))
+
+            time.sleep(random.uniform(3, 8))
+        except Exception as e:
+            print(f"AI模拟异常: {e}")
+            time.sleep(5)
+
+# 启动后台线程
+import threading
+_ai_thread = threading.Thread(target=ai_simulate_loop, daemon=True)
+_ai_thread.start()
 
 # ── 静态文件 ────────────────────────
 if os.path.exists(os.path.join(os.path.dirname(__file__), "static", "index.html")):

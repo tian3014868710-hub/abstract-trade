@@ -54,6 +54,22 @@ body {
   border: none; background: transparent; position: relative; overflow: hidden;
 }
 .nav-tab.on { color: #fff; background: linear-gradient(135deg, var(--acc), var(--acc2)); box-shadow: 0 2px 16px rgba(255,107,157,0.35); }
+.search-bar { display:flex; align-items:center; gap:8px; }
+.search-input {
+  padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--tx); outline: none; width: 180px; transition: all 0.25s;
+  font-family: inherit;
+}
+.search-input:focus { border-color: var(--acc); background: rgba(255,107,157,0.08); width: 220px; }
+.search-input::placeholder { color: var(--tx3); }
+.search-btn {
+  width: 34px; height: 34px; border-radius: 50%; border: none;
+  background: linear-gradient(135deg, var(--acc), var(--acc2));
+  color: #fff; font-size: 14px; cursor: pointer; display:flex; align-items:center; justify-content:center;
+  transition: transform 0.2s; flex-shrink: 0;
+}
+.search-btn:hover { transform: scale(1.1); }
 .user-bar { display:flex; align-items:center; gap:14px; }
 .coin-badge {
   display:flex; align-items:center; gap:6px;
@@ -108,22 +124,130 @@ body {
 .filter-tag.on { color:#fff; background:linear-gradient(135deg,var(--acc),var(--acc2)); border-color:transparent; box-shadow:0 2px 12px rgba(255,107,157,0.25); }
 .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px; }
 .card {
-  background:var(--card); border-radius:var(--r); overflow:hidden;
-  border:1px solid rgba(255,255,255,0.05);
-  transition: transform 0.35s, box-shadow 0.35s, border-color 0.35s;
-  cursor:pointer; position:relative;
+  background:var(--card);
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: transform 0.4s cubic-bezier(.4,0,.2,1),
+              box-shadow 0.4s cubic-bezier(.4,0,.2,1),
+              border-color 0.4s;
+  cursor: pointer;
+  position: relative;
+  will-change: transform;
 }
-.card:hover { border-color:rgba(255,107,157,0.25); box-shadow:0 12px 48px rgba(255,107,157,0.15), 0 2px 8px rgba(0,0,0,0.3); }
-.card-img { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:64px; position:relative; overflow:hidden; }
-.card-body { padding:16px; }
-.card-title { font-size:15px; font-weight:700; margin-bottom:4px; }
-.card-author { font-size:12px; color:var(--tx3); margin-bottom:12px; }
-.card-footer { display:flex; align-items:center; justify-content:space-between; }
-.card-likes { display:flex; align-items:center; gap:4px; font-size:13px; color:var(--tx2); }
-.rarity-badge { padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; text-transform:uppercase; }
-.rarity-common  { background:rgba(167,169,190,0.12); color:var(--tx2); }
-.rarity-rare    { background:rgba(192,132,252,0.12); color:var(--acc2); }
-.rarity-legendary { background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1)); color:var(--acc3); }
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(255,107,157,0.35);
+  box-shadow:
+    0 20px 60px rgba(255,107,157,0.18),
+    0 4px 16px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(255,107,157,0.1);
+}
+.card-img {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+.card-img img {
+  transition: transform 0.6s cubic-bezier(.4,0,.2,1);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.card:hover .card-img img {
+  transform: scale(1.08);
+}
+.card-img .price-tag {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, rgba(251,191,36,0.95), rgba(245,158,11,0.95));
+  color: #000;
+  font-weight: 900;
+  font-size: 14px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 12px rgba(251,191,36,0.4);
+  z-index: 2;
+  transition: transform 0.2s;
+}
+.card:hover .price-tag {
+  transform: scale(1.08);
+}
+.card-img .img-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60%;
+  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+.card-body {
+  padding: 14px 16px 16px;
+  position: relative;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tx);
+  transition: color 0.2s;
+}
+.card:hover .card-title {
+  color: var(--acc);
+}
+.card-author {
+  font-size: 12px;
+  color: var(--tx3);
+  margin-bottom: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-likes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--tx2);
+}
+.rarity-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.rarity-common  { background: rgba(167,169,190,0.15); color: var(--tx2); border: 1px solid rgba(167,169,190,0.2); }
+.rarity-rare    { background: rgba(192,132,252,0.15); color: var(--acc2); border: 1px solid rgba(192,132,252,0.25); }
+.rarity-epic    { background: linear-gradient(135deg, rgba(192,132,252,0.2), rgba(255,107,157,0.2)); color: var(--acc); border: 1px solid rgba(255,107,157,0.3); }
+.rarity-legendary {
+  background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.15));
+  color: var(--acc3);
+  border: 1px solid rgba(251,191,36,0.35);
+  animation: legendaryGlow 2s ease-in-out infinite;
+}
+@keyframes legendaryGlow {
+  0%,100% { box-shadow: 0 0 8px rgba(251,191,36,0.3); }
+  50%      { box-shadow: 0 0 16px rgba(251,191,36,0.5); }
+}
 .feed { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
 .feed-item { display:flex; gap:14px; align-items:center; padding:14px 16px; background:var(--card); border-radius:var(--r); border:1px solid rgba(255,255,255,0.04); transition:all 0.25s; }
 .feed-item:hover { border-color:rgba(255,255,255,0.1); transform:translateX(4px); }
@@ -368,6 +492,10 @@ body {
     <button class="nav-tab" id="pt-messages" onclick="sp('messages')">💬 消息</button>
     <button class="nav-tab" id="pt-profile" onclick="sp('profile')">👤 我的</button>
   </div>
+  <div class="search-bar">
+    <input class="search-input" id="searchInput" placeholder="🔍 搜索商品/用户..." onkeyup="if(event.key==='Enter')doSearch()" />
+    <button class="search-btn" onclick="doSearch()">🔍</button>
+  </div>
   <div class="user-bar">
     <div class="coin-badge" id="coinDisplay"><span>🪙</span><span id="coinNum">—</span></div>
     <div class="msg-dot" id="msgDot" style="display:none" onclick="sp('messages')">0</div>
@@ -404,6 +532,14 @@ body {
   <div class="feed" id="homeFeed"></div>
   <div class="section-header"><div class="section-title">🏆 富豪榜</div></div>
   <div class="leaderboard" id="leaderboard"></div>
+</div>
+
+<div class="page" id="pg-search">
+  <button class="btn" onclick="sp('home')" style="margin-bottom:20px">← 返回广场</button>
+  <h2 style="font-size:22px;font-weight:800">🔍 搜索结果：<span id="searchQueryText" style="color:var(--acc)"></span></h2>
+  <div id="searchStats" style="color:var(--tx3);font-size:13px;margin-top:6px;margin-bottom:24px"></div>
+  <div id="searchUserResults"></div>
+  <div id="searchItemResults"></div>
 </div>
 
 <div class="page" id="pg-detail">
@@ -687,7 +823,7 @@ async function api(url, opts={}) {
 
 function sp(n) {
   playSound('click');
-  ['home','detail','sell','login','profile','messages'].forEach(p => {
+  ['home','detail','sell','login','profile','messages','search'].forEach(p => {
     const pg = document.getElementById('pg-'+p);
     const pt = document.getElementById('pt-'+p);
     if (pg) pg.classList.toggle('on', p===n);
@@ -742,7 +878,7 @@ async function doLogin() {
     updateNav();
     showToast('🎉 ' + (isRegisterMode ? '注册成功，欢迎' : '欢迎回来，') + user + '！', 'success');
     playSound('success');
-    setTimeout(() => sp('home'), 1200);
+    sp('home');    // 立即跳首页
   } else {
     err.textContent = res.msg;
     err.style.display = 'block';
@@ -783,15 +919,13 @@ async function renderHome() {
   const grid = document.getElementById('homeGrid');
   if (grid) grid.style.display = 'grid';
   if (grid) grid.innerHTML = items.map((item,i) => {
-    const bg = ['linear-gradient(135deg,#1a0a2e,#2d1b69)','linear-gradient(135deg,#0a1a2e,#1b6942)','linear-gradient(135deg,#2e0a0a,#691b1b)'][i%3];
-    const rl = {common:'普通',rare:'稀有',legendary:'传说'}[item.rarity]||'普通';
-    const imgContent = (item.media_type === 'image' && item.media_data)
-      ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
-      : '<div style="font-size:64px">' + (item.emoji||'🎭') + '</div>';
-    return '<div class="card" onclick="showDetail(\'' + item.id + '\')" style="animation:pageIn 0.4s ' + (i*0.06) + 's both">' +
-      '<div class="card-img" style="background:' + bg + '">' + imgContent + '<div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.65);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700;color:var(--acc3)">🪙 ' + item.price + '</div></div>' +
-      '<div class="card-body"><div class="card-title">' + item.name + '</div>' +
-      '<div class="card-author">' + item.author + ' · ' + (item.category||'') + '</div>' +
+    const imgHTML = (item.media_type === 'image' && item.media_data)
+      ? '<img src="' + item.media_data + '" alt="' + escapeHtml(item.name) + '" />'
+      : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
+    return '<div class="card" onclick="showDetail(\'' + esc(item.id) + '\')" style="animation:pageIn 0.4s ' + (i*0.06) + 's both">' +
+      '<div class="card-img">' + imgHTML + '<div class="img-overlay"></div><div class="price-tag">🪙 ' + item.price + '</div></div>' +
+      '<div class="card-body"><div class="card-title">' + escapeHtml(item.name) + '</div>' +
+      '<div class="card-author"><span onclick="event.stopPropagation();viewUser(\'' + esc(item.author) + '\')" style="cursor:pointer;text-decoration:underline;color:var(--acc2)">' + escapeHtml(item.author) + '</span> · ' + escapeHtml(item.category||'') + '</div>' +
       '<div class="card-footer"><div class="card-likes">❤️ ' + (item.likes||0) + '</div>' +
       '<div class="rarity-badge rarity-' + (item.rarity||'common') + '">' + rl + '</div></div></div></div>';
   }).join('');
@@ -803,7 +937,7 @@ async function renderHome() {
   let lbHTML = '<div class="lb-header">🏆 游戏币富豪榜</div>';
   (leaderboard||[]).forEach((u,i) => {
     const rc = ['top1','top2','top3','other','other'][i]||'other';
-    lbHTML += '<div class="lb-item"><div class="lb-rank ' + rc + '">' + (i+1) + '</div><div class="lb-name">' + u.name + '</div><div class="lb-coins">' + u.coins.toLocaleString() + '</div></div>';
+    lbHTML += '<div class="lb-item" style="cursor:pointer" onclick="viewUser(\'' + esc(u.name) + '\')"><div class="lb-rank ' + rc + '">' + (i+1) + '</div><div class="lb-name">' + esc(u.name) + '</div><div class="lb-coins">' + u.coins.toLocaleString() + '</div></div>';
   });
   const lb = document.getElementById('leaderboard');
   if (lb) lb.innerHTML = lbHTML;
@@ -811,13 +945,24 @@ async function renderHome() {
   const fres = await api('/api/feed');
   if (fres && fres.code === 0) {
     const feedHTML = (fres.data||[]).map((f,i) => {
-      return '<div class="feed-item"><div class="feed-name">' + (f.name||'?') + '</div>' +
-        '<div class="feed-action">' + (f.action||'') + ' <strong>' + (f.target||'') + '</strong></div>' +
-        '<div class="feed-time">' + (f.time||'') + '</div></div>';
+      return '<div class="feed-item"><div class="feed-name" style="cursor:pointer" onclick="viewUser(\'' + esc(f.name||'') + '\')">' + escapeHtml(f.name||'?') + '</div>' +
+        '<div class="feed-action">' + escapeHtml(f.action||'') + ' <strong>' + escapeHtml(f.target||'') + '</strong></div>' +
+        '<div class="feed-time">' + escapeHtml(f.time||'') + '</div></div>';
     }).join('');
     const hf = document.getElementById('homeFeed');
     if (hf) hf.innerHTML = feedHTML;
   }
+
+  // 加载真实统计
+  try {
+    const statRes = await api('/api/stats');
+    if (statRes && statRes.code === 0) {
+      const sd = statRes.data;
+      const st = document.getElementById('statTotal'); if (st) st.textContent = sd.items || 0;
+      const su = document.getElementById('statUsers'); if (su) su.textContent = (sd.users || 0) + ' (' + (sd.ai_users || 0) + ' AI)';
+      const stx = document.getElementById('statTx'); if (stx) stx.textContent = sd.transactions || 0;
+    }
+  } catch(e) {}
 }
 
 async function showDetail(id) {
@@ -832,11 +977,19 @@ async function showDetail(id) {
     if (item.media_type === 'image' && item.media_data) {
       da.innerHTML = '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />';
     } else {
-      da.innerHTML = '<div style="font-size:120px">' + (item.emoji || '🎭') + '</div>';
+      da.innerHTML = '<div style="font-size:120px">' + escapeHtml(item.emoji || '🎭') + '</div>';
     }
   }
   const dt = document.getElementById('detailTitle'); if (dt) dt.textContent = item.name;
-  const dna = document.getElementById('detailAuthor'); if (dna) dna.textContent = '创作者: ' + item.author;
+  // 作者信息
+  let dna = document.getElementById('detailAuthor');
+  if (!dna) {
+    dna = document.createElement('div');
+    dna.id = 'detailAuthor';
+    dna.style.cssText = 'font-size:13px;color:var(--tx3);margin:8px 0 16px';
+    dt?.parentNode?.insertBefore(dna, dt.nextSibling);
+  }
+  dna.innerHTML = '创作者: <span onclick="viewUser(\'' + esc(item.author) + '\')" style="cursor:pointer;text-decoration:underline;color:var(--acc2)">' + escapeHtml(item.author) + '</span> · ' + escapeHtml(item.category||'') + ' · ' + (item.created_at||'').split('T')[0];
   const dp = document.getElementById('detailPrice'); if (dp) dp.textContent = '🪙 ' + item.price;
   const ci = document.getElementById('chainId'); if (ci) ci.textContent = item.id;
   const ct = document.getElementById('chainTime'); if (ct) ct.textContent = (item.created_at||'').split('T')[0];
@@ -868,9 +1021,9 @@ async function renderComments(id) {
     const isMe = currentUser && c.author === currentUser.id;
     const bg = isMe ? 'linear-gradient(135deg,#ff6b9d,#c084fc)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)';
     return '<div class="comment" style="animation-delay:' + (i*0.08) + 's">' +
-      '<div class="comment-avatar" style="background:' + bg + ';width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff">' + (c.author||'?')[0] + '</div>' +
-      '<div class="comment-body"><div class="comment-name">' + c.author + '</div>' +
-      '<div class="comment-text">' + c.text + '</div></div></div>';
+      '<div class="comment-avatar" style="background:' + bg + ';width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff">' + escapeHtml((c.author||'?')[0]) + '</div>' +
+      '<div class="comment-body"><div class="comment-name">' + escapeHtml(c.author) + '</div>' +
+      '<div class="comment-text">' + escapeHtml(c.text) + '</div></div></div>';
   }).join('');
 }
 
@@ -970,8 +1123,96 @@ async function listItem() {
   }
 }
 
+// ── 查看他人主页 ─────────────────────────────────
+let viewTargetUser = null; // 当前查看的用户名
+
+async function viewUser(username) {
+  playSound('click');
+  viewTargetUser = username;
+  sp('profile');  // 跳到个人主页页面
+  await renderUserProfile(username);
+}
+
+async function renderUserProfile(username) {
+  const res = await api('/api/profile/' + encodeURIComponent(username));
+  if (!res || res.code !== 0) {
+    showToast('用户不存在', 'error');
+    viewTargetUser = null;
+    return;
+  }
+  const u = res.data.user;
+  const items = res.data.items || [];
+  const isMe = currentUser && currentUser.id === username;
+
+  // 头像和名字
+  const avatar = document.getElementById('profileAvatar');
+  if (avatar) {
+    avatar.innerHTML = (u.avatar_data || u.avatar_emoji || username[0] || '?').toUpperCase();
+    const lvl = document.getElementById('levelBadge');
+    if (lvl) lvl.textContent = 'Lv.' + (u.level || 1);
+  }
+  const pn = document.getElementById('profileName');
+  if (pn) pn.textContent = username;
+  const pb = document.getElementById('profileBio');
+  if (pb) pb.textContent = u.bio || '这个人很懒，什么都没写~';
+
+  // 统计数字
+  const sc = document.getElementById('statCreated'); if (sc) sc.textContent = items.length;
+  const sf = document.getElementById('statFav'); if (sf) sf.textContent = '—';
+  const sfp = document.getElementById('statFP'); if (sfp) sfp.textContent = '—';
+  const sco = document.getElementById('statCoins2'); if (sco) sco.textContent = (u.coins||0).toLocaleString();
+
+  // 按钮区：我的 vs 他人的
+  const actions = document.querySelector('.profile-actions');
+  if (actions) {
+    if (isMe) {
+      actions.innerHTML =
+        '<button class="btn-profile-action btn-checkin" id="btnCheckin" onclick="doCheckin()">📅 每日签到</button>' +
+        '<button class="btn-profile-action" onclick="showEditProfile()">✏️ 编辑资料</button>' +
+        '<button class="btn-profile-action" onclick="switchProfileTab(\'fav\')">❤️ 收藏夹</button>' +
+        '<button class="btn-profile-action" onclick="switchProfileTab(\'fp\')">👣 足迹</button>';
+    } else {
+      actions.innerHTML =
+        '<button class="btn-profile-action" onclick="sendMsgTo(\'' + esc(username) + '\')" style="background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff">💬 发消息</button>' +
+        '<button class="btn-profile-action" onclick="doAddFriendFromProfile(\'' + esc(username) + '\')">🤝 加好友</button>';
+    }
+  }
+
+  // 默认显示创作tab
+  switchProfileTab('created');
+  // 加载作品
+  const grid = document.getElementById('profileGrid');
+  if (grid) {
+    if (items.length) {
+      grid.innerHTML = items.map((item,i) => {
+        const imgHTML = (item.media_type === 'image' && item.media_data)
+          ? '<img src="' + item.media_data + '" alt="' + escapeHtml(item.name) + '" />'
+          : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
+        const rl = {'common':'普通','rare':'稀有','epic':'史诗','legendary':'传奇'}[item.rarity||'common']||'普通';
+        return '<div class="card" onclick="showDetail(\'' + esc(item.id) + '\')" style="animation:pageIn 0.4s ' + (i*0.06) + 's both">' +
+          '<div class="card-img">' + imgHTML + '<div class="img-overlay"></div><div class="price-tag">🪙 ' + item.price + '</div></div>' +
+          '<div class="card-body"><div class="card-title">' + esc(item.name) + '</div>' +
+          '<div class="card-footer"><div class="card-likes">❤️ ' + (item.likes||0) + '</div>' +
+          '<div class="rarity-badge rarity-' + (item.rarity||'common') + '">' + rl + '</div></div></div></div>';
+      }).join('');
+    } else {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--tx3);padding:48px 20px">这个用户还没有发布任何作品</div>';
+    }
+  }
+}
+
+// 从他人主页加好友
+async function doAddFriendFromProfile(username) {
+  const res = await api('/api/friends/request', { method:'POST', body: JSON.stringify({username}) });
+  if (res && res.code === 0) { showToast('已向 ' + username + ' 发送好友申请', 'success'); }
+  else { showToast(res?.msg||'失败', 'error'); }
+}
+
 async function renderProfile() {
   if (!checkLogin()) return;
+  // 如果正在查看他人主页，不要覆盖
+  if (viewTargetUser && viewTargetUser !== currentUser.id) return;
+  viewTargetUser = null;
   const res = await api('/api/profile/' + currentUser.id);
   if (!res || res.code !== 0) return;
   const u = res.data.user;
@@ -984,12 +1225,12 @@ async function renderProfile() {
   if (!grid) return;
   if (items.length) {
     grid.innerHTML = items.map((item,i) => {
-      const imgContent = (item.media_type === 'image' && item.media_data)
-        ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
-        : '<div style="font-size:64px">' + (item.emoji||'🎭') + '</div>';
+      const imgHTML = (item.media_type === 'image' && item.media_data)
+        ? '<img src="' + item.media_data + '" alt="' + escapeHtml(item.name) + '" />'
+        : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
       return '<div class="card" onclick="showDetail(\'' + item.id + '\')">' +
-        '<div class="card-img" style="background:linear-gradient(135deg,#1a0a2e,#2d1b69)">' + imgContent + '</div>' +
-        '<div class="card-body"><div class="card-title">' + item.name + '</div>' +
+        '<div class="card-img">' + imgHTML + '<div class="img-overlay"></div><div class="price-tag">🪙 ' + item.price + '</div></div>' +
+        '<div class="card-body"><div class="card-title">' + esc(item.name) + '</div>' +
         '<div class="card-footer"><div class="card-likes">❤️ ' + (item.likes||0) + '</div>' +
         '<div style="color:var(--acc3);font-weight:700;font-size:14px">🪙 ' + item.price + '</div></div></div></div>';
     }).join('');
@@ -1083,10 +1324,10 @@ async function renderMsgList() {
     return;
   }
   list.innerHTML = friends.map(f =>
-    '<div class="msg-list-item" onclick="selectConversation({type:\'dm\',id:\'' + f.id + '\',name:\'' + f.id + '\'})">' +
-      '<div class="msg-list-avatar">' + (f.id[0]||'?').toUpperCase() + '</div>' +
-      '<div class="msg-list-info"><div class="msg-list-name">' + f.id + '</div>' +
-      '<div class="msg-list-preview">' + (f.bio||'点击开始聊天') + '</div></div>' +
+    '<div class="msg-list-item" onclick="selectConversation({type:\'dm\',id:\'' + esc(f.id) + '\',name:\'' + esc(f.id) + '\'})">' +
+      '<div class="msg-list-avatar" onclick="event.stopPropagation();viewUser(\'' + esc(f.id) + '\')">' + esc((f.id[0]||'?').toUpperCase()) + '</div>' +
+      '<div class="msg-list-info"><div class="msg-list-name">' + esc(f.id) + '</div>' +
+      '<div class="msg-list-preview">' + esc(f.bio||'点击开始聊天') + '</div></div>' +
     '</div>'
   ).join('');
 }
@@ -1161,7 +1402,7 @@ async function renderFriends() {
     } else {
       frList.innerHTML = pendingIncoming.map(p =>
         '<div class="friend-request-card">' +
-          '<div class="fr-info"><div class="fr-name">' + esc(p.from_user) + '</div><div class="fr-label">发来好友申请</div></div>' +
+          '<div class="fr-info"><div class="fr-name" style="cursor:pointer" onclick="viewUser(\'' + esc(p.from_user) + '\')">' + esc(p.from_user) + '</div><div class="fr-label">发来好友申请</div></div>' +
           '<button class="btn-sm btn-accept" onclick="respondFriend(\'' + esc(p.from_user) + '\',\'accept\')">接受</button>' +
           '<button class="btn-sm btn-reject" onclick="respondFriend(\'' + esc(p.from_user) + '\',\'reject\')">拒绝</button>' +
           '<button class="btn-sm" style="background:rgba(192,132,252,0.1);color:var(--acc2)" onclick="sendMsgTo(\'' + esc(p.from_user) + '\')">发消息</button>' +
@@ -1179,7 +1420,7 @@ async function renderFriends() {
     } else {
       html += friends.map(f =>
         '<div class="msg-list-item" onclick="sendMsgTo(\'' + esc(f.id) + '\')">' +
-          '<div class="msg-list-avatar">' + esc((f.id[0]||'?').toUpperCase()) + '</div>' +
+          '<div class="msg-list-avatar" onclick="event.stopPropagation();viewUser(\'' + esc(f.id) + '\')">' + esc((f.id[0]||'?').toUpperCase()) + '</div>' +
           '<div class="msg-list-info"><div class="msg-list-name">' + esc(f.id) + '</div>' +
           '<div class="msg-list-preview">' + esc(f.bio||'') + '</div></div>' +
         '</div>'
@@ -1242,14 +1483,23 @@ async function renderNotifications() {
     list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--tx3)">暂无通知</div>';
     return;
   }
-  list.innerHTML = notifs.map(n =>
-    '<div class="notif-item ' + (n.read == 0 ? 'unread' : '') + '" onclick="markNotifRead(\'' + esc(n.id) + '\')">' +
+  list.innerHTML = notifs.map(n => {
+    // 从通知内容提取用户名
+    let viewUsername = null;
+    if (n.type === 'friend_request' || n.type === 'friend_accept' || n.type === 'friend_reject' || n.type === 'message') {
+      const match = (n.content||'').match(/([^\s]{2,20})(?: 向你| 给你| 接受了| 拒绝了)/);
+      if (match) viewUsername = match[1];
+    }
+    const textHtml = viewUsername
+      ? esc(n.content||'').replace(esc(viewUsername), '<span onclick="event.stopPropagation();viewUser(\'' + esc(viewUsername) + '\')" style="cursor:pointer;color:var(--acc2);text-decoration:underline">' + esc(viewUsername) + '</span>')
+      : esc(n.content||'');
+    return '<div class="notif-item ' + (n.read == 0 ? 'unread' : '') + '" onclick="markNotifRead(\'' + esc(n.id) + '\')">' +
       '<div class="notif-icon">' + (n.icon||'📬') + '</div>' +
-      '<div class="notif-body"><div class="notif-text">' + esc(n.content||'') + '</div>' +
+      '<div class="notif-body"><div class="notif-text">' + textHtml + '</div>' +
       '<div class="notif-time">' + esc((n.created_at||'').substring(0,16).replace('T',' ')) + '</div></div>' +
       (n.read == 0 ? '<button class="btn-notif-read">已读</button>' : '') +
-    '</div>'
-  ).join('');
+    '</div>';
+  }).join('');
 }
 async function markNotifRead(id) {
   await api('/api/notifications/read', { method:'POST', body: JSON.stringify({id}) });
@@ -1283,9 +1533,9 @@ async function renderProfileFavs() {
     const img = (item.media_type==='image' && item.media_data)
       ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
       : '<div>' + (item.emoji||'🎭') + '</div>';
-    return '<div class="fav-item" onclick="showDetail(\'' + item.id + '\')">' +
+    return '<div class="fav-item" onclick="showDetail(\'' + esc(item.id) + '\')">' +
       '<div class="fav-item-img">' + img + '</div>' +
-      '<div class="fav-item-name">' + item.name + '</div>' +
+      '<div class="fav-item-name">' + esc(item.name) + '</div>' +
       '<div class="fav-item-price">🪙 ' + item.price + '</div></div>';
   }).join('');
 }
@@ -1300,9 +1550,9 @@ async function renderProfileFPs() {
     const img = (item.media_type==='image' && item.media_data)
       ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
       : '<div>' + (item.emoji||'🎭') + '</div>';
-    return '<div class="fp-item" onclick="showDetail(\'' + item.id + '\')">' +
+    return '<div class="fp-item" onclick="showDetail(\'' + esc(item.id) + '\')">' +
       '<div class="fp-item-img">' + img + '</div>' +
-      '<div class="fp-item-name">' + item.name + '</div></div>';
+      '<div class="fp-item-name">' + esc(item.name) + '</div></div>';
   }).join('');
 }
 
@@ -1389,15 +1639,19 @@ async function doBargain() {
   } else { showToast(res?.msg||'发送失败', 'error'); }
 }
 
-// ── 辅助 ──────────────────────────────────
+// HTML转义（用于普通文本内容）
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\n/g,'<br>');
 }
-// HTML-safe escape + JS-string-safe (for onclick attributes)
+// JS-string-safe + HTML-safe（用于 onclick 等属性值）
 function esc(str) {
   if (!str) return '';
-  return str.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+  // 先HTML转义，再处理JS字符串特殊字符
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+    .replace(/\\/g,'\\\\').replace(/\n/g,'\\n');
 }
 
 function updateNav() {
@@ -1446,6 +1700,70 @@ function updateNav() {
   }
   await renderHome();
 })();
+
+// ── 搜索 ─────────────────────────
+async function doSearch() {
+  const q = document.getElementById('searchInput')?.value?.trim();
+  if (!q) { showToast('请输入搜索关键词', 'error'); return; }
+  playSound('click');
+  const res = await api('/api/search?q=' + encodeURIComponent(q));
+  if (!res || res.code !== 0) { showToast(res?.msg||'搜索失败', 'error'); return; }
+
+  const { items, users } = res.data || { items: [], users: [] };
+
+  const qt = document.getElementById('searchQueryText');
+  if (qt) qt.textContent = q;
+  const stats = document.getElementById('searchStats');
+  if (stats) stats.textContent = `找到 ${items.length} 件商品，${users.length} 位用户`;
+
+  // 用户结果
+  const userDiv = document.getElementById('searchUserResults');
+  if (userDiv) {
+    if (users.length === 0) {
+      userDiv.innerHTML = '';
+    } else {
+      userDiv.innerHTML = '<div class="section-header" style="margin-top:24px"><div class="section-title">👤 用户</div></div>' +
+        '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">' +
+        users.map(u => {
+          const isMe = currentUser && currentUser.id === u.id;
+          return '<div class="card" onclick="viewUser(\'' + esc(u.id) + '\')">' +
+            '<div class="card-img" style="background:linear-gradient(135deg,#1a0a2e,#2d1b69)">' +
+            '<div style="font-size:48px">' + escapeHtml(u.avatar_emoji||'👤') + '</div></div>' +
+            '<div class="card-body"><div class="card-title">' + escapeHtml(u.id) + '</div>' +
+            '<div style="font-size:12px;color:var(--tx3);margin-bottom:8px">' + escapeHtml(u.bio||'') + '</div>' +
+            '<div style="font-size:13px;color:var(--acc3);font-weight:700">🪙 ' + (u.coins||0).toLocaleString() + '</div>' +
+            (isMe ? '<div style="font-size:11px;color:var(--tx3);margin-top:4px">我自己</div>' : '') + '</div></div>';
+        }).join('') + '</div>';
+    }
+  }
+
+  // 商品结果
+  const itemDiv = document.getElementById('searchItemResults');
+  if (itemDiv) {
+    if (items.length === 0) {
+      itemDiv.innerHTML = '<div style="text-align:center;padding:48px;color:var(--tx3)">没有找到相关商品</div>';
+    } else {
+      itemDiv.innerHTML = '<div class="section-header" style="margin-top:24px"><div class="section-title">🎭 商品</div></div>' +
+        '<div class="grid">' +
+        items.map((item,i) => {
+          const bg = ['linear-gradient(135deg,#1a0a2e,#2d1b69)','linear-gradient(135deg,#0a1a2e,#1b6942)','linear-gradient(135deg,#2e0a0a,#691b1b)'][i%3];
+          const rl = {common:'普通',rare:'稀有',legendary:'传说'}[item.rarity]||'普通';
+          const imgContent = (item.media_type === 'image' && item.media_data)
+            ? '<img src="' + item.media_data + '" style="width:100%;height:100%;object-fit:cover" />'
+            : '<div style="font-size:64px">' + escapeHtml(item.emoji||'🎭') + '</div>';
+          return '<div class="card" onclick="showDetail(\'' + esc(item.id) + '\')" style="animation:pageIn 0.4s ' + (i*0.06) + 's both">' +
+            '<div class="card-img" style="background:' + bg + '">' + imgContent + '<div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.65);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700;color:var(--acc3)">🪙 ' + item.price + '</div></div>' +
+            '<div class="card-body"><div class="card-title">' + escapeHtml(item.name) + '</div>' +
+            '<div class="card-author"><span onclick="event.stopPropagation();viewUser(\'' + esc(item.author) + '\')" style="cursor:pointer;text-decoration:underline;color:var(--acc2)">' + escapeHtml(item.author) + '</span></div>' +
+            '<div class="card-footer"><div class="card-likes">❤️ ' + (item.likes||0) + '</div>' +
+            '<div class="rarity-badge rarity-' + (item.rarity||'common') + '">' + rl + '</div></div></div></div>';
+        }).join('') + '</div>';
+    }
+  }
+
+  sp('search');
+}
+
 </script>
 </body>
 </html>
