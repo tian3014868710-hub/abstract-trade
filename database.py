@@ -102,7 +102,8 @@ if USE_TURSO:
             bio TEXT DEFAULT '',
             avatar_data TEXT DEFAULT '',
             background_data TEXT DEFAULT '',
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            first_login TEXT DEFAULT ''
         )
         """)
 
@@ -299,7 +300,30 @@ if USE_TURSO:
         )
         """)
 
+        # ── market 表（市场/上架）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS market (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id TEXT NOT NULL,
+            seller TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            buyer TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        )
+        """)
         conn.commit()
+
+        # 迁移：为已有数据库添加market表列
+        _market_migrations = [
+            "ALTER TABLE market ADD COLUMN buyer TEXT DEFAULT ''",
+        ]
+        for _sql in _market_migrations:
+            try:
+                cur.execute(_sql)
+                conn.commit()
+            except Exception:
+                pass
 
         # ── 预置成就数据 ──
         ACHIEVEMENTS_DATA = [
@@ -334,6 +358,7 @@ if USE_TURSO:
             "ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''",
             "ALTER TABLE users ADD COLUMN avatar_data TEXT DEFAULT ''",
             "ALTER TABLE users ADD COLUMN background_data TEXT DEFAULT ''",
+            "ALTER TABLE users ADD COLUMN first_login TEXT DEFAULT ''",
         ]
         for _sql in _migrations:
             try:
@@ -403,7 +428,8 @@ else:
             bio TEXT DEFAULT '',
             avatar_data TEXT DEFAULT '',
             background_data TEXT DEFAULT '',
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            first_login TEXT DEFAULT ''
         )
         """)
 
@@ -592,7 +618,30 @@ else:
         )
         """)
 
+        # ── market 表（市场/上架）──
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS market (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id TEXT NOT NULL,
+            seller TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            buyer TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        )
+        """)
         conn.commit()
+
+        # 迁移：为已有数据库添加market表列
+        _market_migrations = [
+            "ALTER TABLE market ADD COLUMN buyer TEXT DEFAULT ''",
+        ]
+        for _sql in _market_migrations:
+            try:
+                cur.execute(_sql)
+                conn.commit()
+            except Exception:
+                pass
 
         # ── 预置成就数据 ──
         ACHIEVEMENTS_DATA = [
@@ -625,6 +674,7 @@ else:
             "ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''",
             "ALTER TABLE users ADD COLUMN avatar_data TEXT DEFAULT ''",
             "ALTER TABLE users ADD COLUMN background_data TEXT DEFAULT ''",
+            "ALTER TABLE users ADD COLUMN first_login TEXT DEFAULT ''",
         ]
         for _sql in _migrations:
             try:

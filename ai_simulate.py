@@ -111,29 +111,8 @@ def do_message(conn, ai_list):
         pass
 
 def do_buy(conn, ai_list, items):
-    if not items: return
-    item = random.choice(items)
-    buyers = [u for u in ai_list if u != item['author']]
-    if not buyers: return
-    buyer  = random.choice(buyers)
-    seller = item['author']
-    price  = item['price']
-    now    = datetime.now().isoformat()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT coins FROM users WHERE id=?", (buyer,))
-        r = cur.fetchone()
-        if not r or r[0] < price:
-            cur.execute("UPDATE users SET coins=coins+? WHERE id=?", (price+100, buyer))
-        cur.execute("UPDATE users SET coins=coins-? WHERE id=?", (price, buyer))
-        cur.execute("UPDATE users SET coins=coins+? WHERE id=?", (int(price*0.95), seller))
-        cur.execute("UPDATE items SET author=?, transfers=transfers+1 WHERE id=?", (buyer, item['id']))
-        cur.execute(
-            "INSERT INTO transactions (item_id,buyer,seller,price,created_at) VALUES (?,?,?,?,?)",
-            (item['id'], buyer, seller, price, now))
-        conn.commit()
-    except Exception:
-        pass
+    """AI购买功能已禁用 - 用户要求AI只上架不购买"""
+    pass  # 已禁用
 
 def do_footprint(conn, ai_list, items):
     if not items: return
@@ -195,7 +174,7 @@ def run():
         ("评论",   do_comment),
         ("收藏",   do_favorite),
         ("私信",   do_message),
-        ("购买",   do_buy),
+        # ("购买",   do_buy),  # 已禁用 - AI只上架不购买
         ("浏览",   do_footprint),
         ("创作商品", do_create_product),
     ]
