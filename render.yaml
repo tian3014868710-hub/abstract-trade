@@ -6,6 +6,8 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
       - key: TURSO_DATABASE_URL
         value: libsql://abstract-trade-db-tian3014868710-hub.aws-ap-northeast-1.turso.io
       - key: TURSO_AUTH_TOKEN

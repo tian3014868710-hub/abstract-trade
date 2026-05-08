@@ -10,7 +10,7 @@ USE_TURSO = bool(os.environ.get("TURSO_DATABASE_URL"))
 
 # ── Turso 后端（libsql）──────────────────────────────────────────────
 if USE_TURSO:
-    import libsql_experimental as libsql
+    import libsql
 
     _URL = os.environ["TURSO_DATABASE_URL"]
     _TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "")
