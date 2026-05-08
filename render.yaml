@@ -5,3 +5,8 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
+    envVars:
+      - key: TURSO_DATABASE_URL
+        value: libsql://abstract-trade-db-tian3014868710-hub.aws-ap-northeast-1.turso.io
+      - key: TURSO_AUTH_TOKEN
+        value: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiJhZjk3MWU4OS03YTkyLTQzNDUtOTNjYi04ZGY2ZjllMDliNTAiLCJpYXQiOjE3NzgyNDc2ODEsInJpZCI6ImJiZjdhMTg5LTZhNjUtNDY0Ny1iZDNlLWI1ZDY5NjllZTdiMCJ9.JCGpU_h3qd3WGde-3YHuQulE8tvJWsgHVB4BUjRKF-CBfjIHp33WwS6DzkjvOsEVgGnWQhEAPnkQj9sD0fsQDg
